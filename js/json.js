@@ -49,7 +49,7 @@ function textEl(className, text) {
 
 function valueSpan(value) {
   if (value === null) return textEl("val nil", "null");
-  if (typeof value === "string") return textEl("val str", value);
+  if (typeof value === "string") return textEl("val str", JSON.stringify(value));
   if (typeof value === "number") return textEl("val num", String(value));
   return textEl("val", String(value));
 }
@@ -77,8 +77,7 @@ function nodeView(value, key, depth, path) {
     const row = document.createElement("div");
     row.className = "leaf";
     if (key !== null) row.append(textEl("key", String(key)), ": ");
-    if (typeof value === "string") row.append('"', valueSpan(value), '"');
-    else row.append(valueSpan(value));
+    row.append(valueSpan(value));
     return row;
   }
 
@@ -100,15 +99,14 @@ function nodeView(value, key, depth, path) {
 }
 
 function appendJsonKey(parent, key) {
-  parent.append('"', textEl("key", String(key)), '"', ": ");
+  parent.append(textEl("key", JSON.stringify(String(key))), ": ");
 }
 
 function jsonLeaf(value, key, last) {
   const row = document.createElement("div");
   row.className = "leaf";
   if (key !== null) appendJsonKey(row, key);
-  if (typeof value === "string") row.append('"', valueSpan(value), '"');
-  else if (value !== null && typeof value === "object") row.append(Array.isArray(value) ? "[]" : "{}");
+  if (value !== null && typeof value === "object") row.append(Array.isArray(value) ? "[]" : "{}");
   else row.append(valueSpan(value));
   if (!last) row.append(",");
   return row;

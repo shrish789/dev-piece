@@ -27,6 +27,15 @@
       --mark-current: #f5a623;
       --added: #d8f3dc;
       --removed: #ffd6d6;
+      --added-strong: #a7e8b1;
+      --removed-strong: #ffaaaa;
+      --code-bg: #f6f8fa;
+      --code-border: rgba(31, 35, 40, 0.15);
+      --table-row: #fff;
+      --table-stripe: #f6f8fa;
+      --focus: #2563eb;
+      --success-bg: #edf8f0;
+      --error-bg: #fff0f1;
     }
     html[data-theme="dark"] {
       color-scheme: dark;
@@ -49,6 +58,15 @@
       --mark-current: #a97820;
       --added: #1d3b28;
       --removed: #4a2424;
+      --added-strong: #2f6f44;
+      --removed-strong: #7d3636;
+      --code-bg: #161b22;
+      --code-border: #30363d;
+      --table-row: #1c1c1c;
+      --table-stripe: #252a31;
+      --focus: #8ab4f8;
+      --success-bg: #183222;
+      --error-bg: #3d2023;
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; }
@@ -76,6 +94,7 @@
       text-decoration: none;
     }
     .brand svg { display: block; width: 22px; height: 22px; flex: none; }
+    .brand .logo-flow { stroke: var(--focus); }
     @media (prefers-reduced-motion: no-preference) {
       header { position: relative; border-bottom-color: transparent; }
       header::after {
@@ -90,7 +109,7 @@
         opacity: 0.7;
         animation: hairline 28s linear infinite;
       }
-      .tab, .ghost, #theme, button { transition: background 0.25s ease, color 0.25s ease; }
+      .tab, .ghost, #theme, button { transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease; }
       .panel,
       .panel:not(.active) {
         position: absolute;
@@ -99,22 +118,23 @@
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
-        transition: opacity 0.55s ease-in-out, visibility 0s linear 0.55s;
+        transition: opacity 0.18s ease-in-out, visibility 0s linear 0.18s;
       }
       .panel.active {
         opacity: 1;
         visibility: visible;
         pointer-events: auto;
-        transition: opacity 0.55s ease-in-out, visibility 0s linear 0s;
+        transition: opacity 0.18s ease-in-out, visibility 0s linear 0s;
       }
     }
     @keyframes hairline {
       from { background-position: 0 0; }
       to { background-position: 200% 0; }
     }
-    nav { display: flex; gap: 4px; }
+    nav { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: thin; }
     button {
-      padding: 6px 14px;
+      min-height: 36px;
+      padding: 7px 14px;
       font: inherit;
       font-size: 14px;
       border: 0;
@@ -124,6 +144,11 @@
       cursor: pointer;
     }
     button:hover { background: var(--button-hover); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--focus) 45%, transparent);
+      outline-offset: 1px;
+    }
     #theme {
       margin-left: auto;
       background: transparent;
@@ -152,7 +177,8 @@
     }
     .toolbar input[type="search"],
     .toolbar select {
-      padding: 6px 8px;
+      min-height: 36px;
+      padding: 7px 9px;
       border: 1px solid var(--line);
       border-radius: 6px;
       background: var(--surface);
@@ -163,6 +189,19 @@
     .toolbar input[type="search"] {
       flex: 1;
       min-width: 140px;
+    }
+    .toolbar-option {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 4px;
+      border: 0;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: normal;
+      text-transform: none;
+      cursor: pointer;
     }
     #search-count {
       min-width: 3.5em;
@@ -178,21 +217,50 @@
     #output, #diff-result {
       font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     }
+    #output { padding-left: 28px; }
     #output:focus { outline: none; }
-    .children, .leaf { padding-left: 16px; }
+    .children { padding-left: 16px; }
+    .leaf { padding-left: 0; }
     details:not([open]) > .children { display: none; }
     .when-closed { display: none; }
     details:not([open]) > summary .when-open { display: none; }
     details:not([open]) > summary .when-closed { display: inline; }
     #output[data-view="json"] .end { margin-left: -16px; }
-    summary { cursor: pointer; }
+    summary {
+      position: relative;
+      list-style: none;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::before {
+      content: "›";
+      position: absolute;
+      left: -16px;
+      width: 12px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.15;
+      text-align: center;
+      transform-origin: center;
+    }
+    details[open] > summary::before { transform: rotate(90deg); }
+    summary:hover { background: var(--line-soft); }
     .key { color: var(--key); }
     .str { color: var(--str); }
     .num { color: var(--num); }
     mark { background: var(--mark); color: inherit; }
     mark.current { background: var(--mark-current); }
     #status, .status { font-size: 13px; color: var(--status); }
-    #status.error, .status.error { color: var(--error); }
+    #status:not(:empty), .status:not(:empty) {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: var(--success-bg);
+    }
+    #status.error, .status.error { color: var(--error); background: var(--error-bg); }
     main { position: relative; flex: 1; display: flex; flex-direction: column; min-height: 0; }
     .panel { flex: 1; display: flex; flex-direction: column; min-height: 0; }
     .panel:not(.active) { display: none; }
@@ -222,7 +290,17 @@
       border-bottom: 1px solid var(--line-soft);
     }
     .section-head label { border-bottom: 0; }
-    input[type="file"] { font: inherit; font-size: 12px; color: var(--muted); }
+    input[type="file"] { max-width: 100%; font: inherit; font-size: 12px; color: var(--muted); }
+    input[type="file"]::file-selector-button {
+      min-height: 30px;
+      margin-right: 8px;
+      padding: 5px 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--text);
+      background: var(--surface);
+      cursor: pointer;
+    }
     textarea {
       flex: 1;
       width: 100%;
@@ -239,9 +317,15 @@
       background: var(--surface);
     }
     textarea::placeholder { color: var(--placeholder); }
-    .diff-line { min-height: 1.45em; white-space: pre; }
-    .diff-line.added { background: var(--added); }
-    .diff-line.removed { background: var(--removed); }
+    textarea:focus-visible { outline-offset: -3px; }
+    .shortcut {
+      margin-left: 5px;
+      padding: 1px 5px;
+      border: 1px solid currentColor;
+      border-radius: 4px;
+      font: 10px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      opacity: 0.72;
+    }
     .preview { min-height: 0; padding: 16px 20px; line-height: 1.5; }
     .preview :first-child { margin-top: 0; }
     .preview h1 { font-size: 1.6em; line-height: 1.25; }
@@ -250,39 +334,179 @@
     .preview blockquote { margin-left: 0; padding-left: 12px; border-left: 3px solid var(--line); color: var(--muted); }
     .preview ul, .preview ol { padding-left: 1.4em; }
     .preview hr { border: 0; border-top: 1px solid var(--line); }
-    .preview table { border-collapse: collapse; }
-    .preview th, .preview td { border: 1px solid var(--line); padding: 4px 8px; }
+    .preview table {
+      display: block;
+      width: 100%;
+      overflow: auto;
+      border-spacing: 0;
+      border-collapse: collapse;
+    }
+    .preview th, .preview td { border: 1px solid var(--line); padding: 6px 13px; }
+    .preview th { font-weight: 650; }
+    .preview tr { background: var(--table-row); border-top: 1px solid var(--line); }
+    .preview tbody tr:nth-child(even) { background: var(--table-stripe); }
     .preview img { max-width: 100%; }
     .preview input[type="checkbox"] { margin-right: 6px; }
-    .preview pre { overflow: auto; padding: 8px; background: var(--bg); border-radius: 6px; }
+    .preview pre {
+      position: relative;
+      overflow: auto;
+      padding: 16px;
+      background: var(--code-bg);
+      border: 1px solid var(--code-border);
+      border-radius: 6px;
+      font-size: 85%;
+      line-height: 1.45;
+    }
+    .preview pre[data-language] { padding-top: 38px; }
+    .preview pre[data-language]::before {
+      content: attr(data-language);
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 6px 12px;
+      color: var(--muted);
+      background: color-mix(in srgb, var(--code-bg) 75%, var(--line));
+      border-bottom: 1px solid var(--code-border);
+      font: 600 11px/1.4 system-ui, sans-serif;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
     .preview code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .preview :not(pre) > code {
+      padding: 0.2em 0.4em;
+      background: var(--code-bg);
+      border-radius: 6px;
+      font-size: 85%;
+    }
+    .preview pre code { padding: 0; background: transparent; font-size: inherit; }
+    .hljs-comment, .hljs-quote { color: #6a737d; }
+    .hljs-keyword, .hljs-selector-tag, .hljs-subst { color: #d73a49; }
+    .hljs-number, .hljs-literal, .hljs-variable, .hljs-template-variable, .hljs-tag .hljs-attr { color: #005cc5; }
+    .hljs-string, .hljs-doctag { color: #032f62; }
+    .hljs-title, .hljs-section, .hljs-selector-id { color: #6f42c1; font-weight: 600; }
+    .hljs-type, .hljs-class .hljs-title { color: #6f42c1; }
+    .hljs-tag, .hljs-name, .hljs-attribute { color: #22863a; }
+    .hljs-regexp, .hljs-link { color: #032f62; }
+    .hljs-symbol, .hljs-bullet { color: #e36209; }
+    .hljs-built_in, .hljs-builtin-name { color: #005cc5; }
+    .hljs-meta { color: #735c0f; }
+    .hljs-deletion { color: #b31d28; background: #ffeef0; }
+    .hljs-addition { color: #22863a; background: #f0fff4; }
+    .hljs-emphasis { font-style: italic; }
+    .hljs-strong { font-weight: 700; }
+    html[data-theme="dark"] .hljs-comment, html[data-theme="dark"] .hljs-quote { color: #8b949e; }
+    html[data-theme="dark"] .hljs-keyword, html[data-theme="dark"] .hljs-selector-tag, html[data-theme="dark"] .hljs-subst { color: #ff7b72; }
+    html[data-theme="dark"] .hljs-number, html[data-theme="dark"] .hljs-literal, html[data-theme="dark"] .hljs-variable, html[data-theme="dark"] .hljs-template-variable, html[data-theme="dark"] .hljs-tag .hljs-attr { color: #79c0ff; }
+    html[data-theme="dark"] .hljs-string, html[data-theme="dark"] .hljs-doctag, html[data-theme="dark"] .hljs-regexp, html[data-theme="dark"] .hljs-link { color: #a5d6ff; }
+    html[data-theme="dark"] .hljs-title, html[data-theme="dark"] .hljs-section, html[data-theme="dark"] .hljs-selector-id, html[data-theme="dark"] .hljs-type, html[data-theme="dark"] .hljs-class .hljs-title { color: #d2a8ff; }
+    html[data-theme="dark"] .hljs-tag, html[data-theme="dark"] .hljs-name, html[data-theme="dark"] .hljs-attribute { color: #7ee787; }
+    html[data-theme="dark"] .hljs-symbol, html[data-theme="dark"] .hljs-bullet { color: #ffa657; }
+    html[data-theme="dark"] .hljs-built_in, html[data-theme="dark"] .hljs-builtin-name { color: #ffa657; }
+    html[data-theme="dark"] .hljs-meta { color: #d2a8ff; }
+    html[data-theme="dark"] .hljs-deletion { color: #ffdcd7; background: #67060c; }
+    html[data-theme="dark"] .hljs-addition { color: #aff5b4; background: #033a16; }
     .preview a { color: var(--key); }
+    #diff-result { padding: 0; border-bottom: 1px solid var(--line); }
+    #diff-result:empty { display: none; }
+    .diff-result-header, .diff-result-row {
+      display: grid;
+      grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr);
+      min-width: 640px;
+    }
+    .diff-result-header {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+    }
+    .diff-result-header > div {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 12px;
+    }
+    .diff-result-header > div:first-child, .diff-cell:first-child { border-right: 1px solid var(--line); }
+    .diff-header-hint { color: var(--muted); font-size: 11px; text-transform: uppercase; }
+    .diff-result-row { border-bottom: 1px solid var(--line-soft); }
+    .diff-cell {
+      display: grid;
+      grid-template-columns: minmax(3.5em, auto) minmax(0, 1fr);
+      min-width: 0;
+      min-height: 1.65em;
+    }
+    .diff-cell.added { background: var(--added); }
+    .diff-cell.removed { background: var(--removed); }
+    .diff-cell.empty {
+      background: repeating-linear-gradient(-45deg, var(--surface), var(--surface) 6px, var(--line-soft) 6px, var(--line-soft) 7px);
+    }
+    .diff-cell.note { color: var(--muted); font-style: italic; }
+    .diff-gutter {
+      padding: 2px 8px;
+      color: var(--muted);
+      background: color-mix(in srgb, var(--line-soft) 60%, transparent);
+      border-right: 1px solid var(--line);
+      text-align: right;
+      user-select: none;
+    }
+    .diff-cell-content {
+      min-width: 0;
+      padding: 2px 8px;
+      color: var(--text);
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font: inherit;
+    }
+    .diff-inline { border-radius: 2px; }
+    .diff-inline.added { background: var(--added-strong); }
+    .diff-inline.removed { background: var(--removed-strong); }
+    .html-preview-frame {
+      flex: 1;
+      width: 100%;
+      min-height: 0;
+      border: 0;
+      background: #fff;
+    }
+    @media (max-width: 760px) {
+      header { flex-wrap: wrap; padding: 8px 10px; }
+      nav { order: 3; width: 100%; padding-bottom: 2px; }
+      .tab { flex: 0 0 auto; }
+      .split { flex-direction: column; overflow: auto; }
+      section { flex: 0 0 min(42vh, 360px); }
+      section + section { border-left: 0; border-top: 1px solid var(--line); }
+      .toolbar { padding: 8px; }
+      .section-head { flex-wrap: wrap; gap: 4px; padding-bottom: 6px; }
+      .section-head input[type="file"] { margin-left: 8px; }
+      .preview { padding: 14px; }
+    }
   </style>
 </head>
 <body>
   <header>
     <a class="brand" href="#json">
       <svg viewBox="0 0 32 32" aria-hidden="true">
-        <path d="M13 8 7 16l6 8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M19 8l6 8-6 8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M18 7 14 25" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M11 5H9.5A2.5 2.5 0 0 0 7 7.5V12c0 2.5-1 4-3 4 2 0 3 1.5 3 4v4.5A2.5 2.5 0 0 0 9.5 27H11" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M21 5h1.5A2.5 2.5 0 0 1 25 7.5V12c0 2.5 1 4 3 4-2 0-3 1.5-3 4v4.5a2.5 2.5 0 0 1-2.5 2.5H21" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>
+        <path class="logo-flow" d="M12 11.5h8m-2.5-2.5 2.5 2.5-2.5 2.5M20 20.5h-8m2.5-2.5-2.5 2.5 2.5 2.5" fill="none" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
       <h1>Utilities</h1>
     </a>
-    <nav>
-      <button class="tab active" type="button" data-tool="json">JSON</button>
-      <button class="tab" type="button" data-tool="sql">SQL</button>
-      <button class="tab" type="button" data-tool="base64">Base64</button>
-      <button class="tab" type="button" data-tool="diff">Diff</button>
-      <button class="tab" type="button" data-tool="markdown">Markdown</button>
+    <nav aria-label="Developer tools">
+      <button class="tab active" type="button" data-tool="json" aria-pressed="true">JSON</button>
+      <button class="tab" type="button" data-tool="sql" aria-pressed="false">SQL</button>
+      <button class="tab" type="button" data-tool="base64" aria-pressed="false">Base64</button>
+      <button class="tab" type="button" data-tool="diff" aria-pressed="false">Diff</button>
+      <button class="tab" type="button" data-tool="markdown" aria-pressed="false">Markdown</button>
+      <button class="tab" type="button" data-tool="html" aria-pressed="false">HTML</button>
     </nav>
     <button id="theme" type="button">Dark</button>
   </header>
   <main>
     <div id="json" class="panel active">
       <div class="toolbar">
-        <button id="parse" type="button">Parse</button>
-        <span id="status"></span>
+        <button id="parse" type="button" title="Parse JSON (Ctrl or Command + Enter)">Parse <span class="shortcut">⌘/Ctrl ↵</span></button>
+        <span id="status" role="status" aria-live="polite"></span>
       </div>
       <div class="split">
         <section>
@@ -307,7 +531,7 @@
     </div>
     <div id="sql" class="panel">
       <div class="toolbar">
-        <button id="format-sql" type="button">Format</button>
+        <button id="format-sql" type="button" title="Format SQL (Ctrl or Command + Enter)">Format <span class="shortcut">⌘/Ctrl ↵</span></button>
         <select id="sql-dialect" aria-label="SQL dialect">
           <option value="sql">Standard</option>
           <option value="postgresql">PostgreSQL</option>
@@ -317,7 +541,7 @@
           <option value="transactsql">T-SQL</option>
           <option value="snowflake">Snowflake</option>
         </select>
-        <span id="sql-status" class="status"></span>
+        <span id="sql-status" class="status" role="status" aria-live="polite"></span>
       </div>
       <div class="split">
         <section>
@@ -334,7 +558,7 @@
       <div class="toolbar">
         <button id="encode" class="ghost active" type="button">Encode</button>
         <button id="decode" class="ghost" type="button">Decode</button>
-        <span id="base64-status" class="status"></span>
+        <span id="base64-status" class="status" role="status" aria-live="polite"></span>
       </div>
       <div class="split">
         <section>
@@ -349,28 +573,38 @@
     </div>
     <div id="diff" class="panel">
       <div class="toolbar">
-        <button id="compare" type="button">Compare</button>
-        <span id="diff-status" class="status"></span>
+        <button id="compare" type="button" title="Compare text (Ctrl or Command + Enter)">Compare <span class="shortcut">⌘/Ctrl ↵</span></button>
+        <select id="diff-mode" aria-label="Comparison detail">
+          <option value="lines">Side by side</option>
+          <option value="characters">Character details</option>
+        </select>
+        <button id="diff-swap" class="ghost" type="button">Swap</button>
+        <button id="diff-clear" class="ghost" type="button">Clear</button>
+        <span id="diff-status" class="status" role="status" aria-live="polite"></span>
       </div>
+      <div id="diff-result" aria-label="Comparison result"></div>
       <div class="split">
         <section>
           <div class="section-head">
-            <label for="diff-left">Left</label>
+            <label for="diff-left">Original</label>
             <input id="diff-left-file" type="file" aria-label="Choose left file">
           </div>
           <textarea id="diff-left" spellcheck="false" placeholder="Paste text or choose a file"></textarea>
         </section>
         <section>
           <div class="section-head">
-            <label for="diff-right">Right</label>
+            <label for="diff-right">Changed</label>
             <input id="diff-right-file" type="file" aria-label="Choose right file">
           </div>
           <textarea id="diff-right" spellcheck="false" placeholder="Paste text or choose a file"></textarea>
         </section>
       </div>
-      <div id="diff-result"></div>
     </div>
     <div id="markdown" class="panel">
+      <div class="toolbar">
+        <button id="markdown-clear" class="ghost" type="button">Clear draft</button>
+        <span id="markdown-status" class="status" role="status" aria-live="polite">Drafts are saved in this browser</span>
+      </div>
       <div class="split">
         <section>
           <label for="markdown-input">Markdown</label>
@@ -382,23 +616,48 @@
         </section>
       </div>
     </div>
+    <div id="html" class="panel">
+      <div class="toolbar">
+        <button id="render-html" type="button" title="Render HTML (Ctrl or Command + Enter)">Render <span class="shortcut">⌘/Ctrl ↵</span></button>
+        <label class="toolbar-option" for="html-live">
+          <input id="html-live" type="checkbox" checked>
+          Live preview
+        </label>
+        <button id="html-clear" class="ghost" type="button">Clear</button>
+        <span id="html-status" class="status" role="status" aria-live="polite">Preview isolated; scripts are blocked</span>
+      </div>
+      <div class="split">
+        <section>
+          <label for="html-input">HTML source</label>
+          <textarea id="html-input" spellcheck="false" placeholder="Write or paste HTML and CSS"></textarea>
+        </section>
+        <section>
+          <label for="html-preview">Rendered preview</label>
+          <iframe id="html-preview" class="html-preview-frame" title="Rendered HTML preview" sandbox referrerpolicy="no-referrer"></iframe>
+        </section>
+      </div>
+    </div>
   </main>
   <script src="vendor/sql-formatter.min.js"></script>
   <script src="vendor/diff.min.js"></script>
   <script src="vendor/marked.min.js"></script>
   <script src="vendor/purify.min.js"></script>
+  <script src="vendor/highlight.min.js"></script>
   <script src="js/json.js"></script>
   <script src="js/sql.js"></script>
   <script src="js/base64.js"></script>
   <script src="js/diff.js"></script>
   <script src="js/markdown.js"></script>
+  <script src="js/html.js"></script>
   <script>
-    const tools = ["json", "sql", "base64", "diff", "markdown"];
+    const tools = ["json", "sql", "base64", "diff", "markdown", "html"];
     const themeButton = document.getElementById("theme");
 
     function applyTheme(theme) {
       document.documentElement.dataset.theme = theme;
       themeButton.textContent = theme === "dark" ? "Light" : "Dark";
+      themeButton.setAttribute("aria-label", `Switch to ${theme === "dark" ? "light" : "dark"} theme`);
+      themeButton.title = `Switch to ${theme === "dark" ? "light" : "dark"} theme`;
     }
 
     const savedTheme = localStorage.getItem("theme");
@@ -414,7 +673,10 @@
       const tool = tools.includes(name) ? name : "json";
       for (const id of tools) {
         document.getElementById(id).classList.toggle("active", id === tool);
-        document.querySelector(`[data-tool="${id}"]`).classList.toggle("active", id === tool);
+        document.getElementById(id).setAttribute("aria-hidden", String(id !== tool));
+        const tab = document.querySelector(`[data-tool="${id}"]`);
+        tab.classList.toggle("active", id === tool);
+        tab.setAttribute("aria-pressed", String(id === tool));
       }
       localStorage.setItem("tool", tool);
       if (location.hash !== "#" + tool) location.hash = tool;
@@ -424,6 +686,20 @@
       const button = event.target.closest("[data-tool]");
       if (!button) return;
       showTool(button.dataset.tool);
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" || (!event.metaKey && !event.ctrlKey) || event.altKey) return;
+      const activeTool = tools.find((id) => document.getElementById(id).classList.contains("active"));
+      const action = {
+        json: document.getElementById("parse"),
+        sql: document.getElementById("format-sql"),
+        diff: document.getElementById("compare"),
+        html: document.getElementById("render-html")
+      }[activeTool];
+      if (!action || action.disabled) return;
+      event.preventDefault();
+      action.click();
     });
 
     window.addEventListener("hashchange", () => {

@@ -1,6 +1,6 @@
 # dev-piece
 
-Small browser tools: JSON, a SQL formatter, base64, a line diff, and a Markdown preview.
+Small browser tools: JSON, a SQL formatter, base64, a line diff, and Markdown and HTML previews.
 
 Open `index.html` in a browser, or use [https://shrish789.github.io/dev-piece/](https://shrish789.github.io/dev-piece/). There is no compile step. GitHub Pages hosts the files. The tools run in the browser.
 
@@ -30,16 +30,34 @@ Paste SQL and click **Format**. Keywords are uppercased and the statement is bro
 
 ## Diff
 
-Paste text, or choose a file, on each side. Click **Compare**. Added lines, removed lines, and unchanged lines are marked in the result.
+Paste text, or choose a file, on each side and click **Compare**. The comparison preview appears above the editors and aligns the original and changed files side by side with line numbers, red/green line backgrounds, and stronger character-level highlights inside edited lines. Both editors scroll together. After the first comparison, the result updates as you type. **Swap** reverses the two sides and **Clear** starts over. Missing final newlines are called out.
+
+Choose **Character details** for exact inserted and deleted character runs with left/right `line:column` ranges. Positions start at 1; the end position is exclusive. Columns count Unicode code points, so an emoji counts as one character. Spaces (`·`), tabs (`⇥`), LF (`↵`), and CR (`␍`) are made visible. Comparisons include whitespace and case. Browser textareas normalize input line endings, so this is a text comparison rather than a byte-for-byte file comparison.
 
 ## Markdown
 
-The preview updates as you type, including tables, task lists, and strikethrough. Scrolling either pane moves the other. Pasting stays at the top of the editor; typing further down follows the cursor. HTML in the source is sanitized before it is shown. Links open in a new tab.
+The preview updates as you type, including tables, task lists, strikethrough, and syntax-highlighted fenced code blocks. Add a language after the opening three backticks, such as `js`, for accurate highlighting and a visible language header; unlabelled blocks use automatic language detection. Tables use bordered cells and alternating row backgrounds in both themes. Scrolling either pane moves the other. Pasting stays at the top of the editor; typing further down follows the cursor. HTML in the source is sanitized before it is shown. Links open in a new tab.
+
+The draft, selection, and scroll position are automatically saved in this browser and restored after reload. Changes are saved after a short pause and when leaving the page. **Clear draft** asks before clearing the editor and saved draft. The toolbar reports storage errors; editing and preview still work if storage is blocked or full. Drafts remain local to this browser and site; they are not synced across devices.
+
+## HTML
+
+Write or paste HTML and CSS into **HTML source**. **Live preview** updates the rendered iframe as you type; turn it off to update only with **Render**. The draft and live-preview preference are saved in this browser. **Clear** asks before removing a saved draft.
+
+The preview uses an isolated iframe and a restrictive content policy. Scripts, network requests from JavaScript, embedded frames, plugins, form submissions, and access to the utilities page are blocked. Inline CSS works, and external HTTP(S) styles, images, fonts, and media can load. Cmd+Enter on macOS or Ctrl+Enter elsewhere renders immediately.
 
 ## Theme
 
 **Dark** / **Light** in the header switches the theme. The choice is remembered, and a first visit follows the system preference.
 
+Controls have visible keyboard focus and adapt to narrow screens. In JSON, SQL, and Diff, press Cmd+Enter on macOS or Ctrl+Enter elsewhere to run the primary action.
+
 ## GitHub Pages
 
 After a push to `master`, the site updates from that branch at `/` (root). Turn that on once under **Settings → Pages → Deploy from a branch**.
+
+## Feature checks and references
+
+Run `node tests/features-check.js` and `node base64-check.js`. The feature checks use a lightweight DOM harness to exercise diff output and draft persistence; they do not replace visual browser testing.
+
+Implementation references: [jsdiff line and character APIs](https://github.com/kpdecker/jsdiff), [Diffchecker's side-by-side text comparison](https://www.diffchecker.com/text-compare/), and [MDN Web Storage](https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API/Using_the_Web_Storage_API).

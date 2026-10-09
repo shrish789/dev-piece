@@ -1,11 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <style>
-    path { stroke: #1a1a1a; }
+    .frame { stroke: #1a1a1a; }
+    .flow { stroke: #2563eb; }
     @media (prefers-color-scheme: dark) {
-      path { stroke: #ececec; }
+      .frame { stroke: #ececec; }
+      .flow { stroke: #8ab4f8; }
     }
   </style>
-  <path d="M13 8 7 16l6 8" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M19 8l6 8-6 8" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M18 7 14 25" fill="none" stroke-width="2.4" stroke-linecap="round"/>
+  <path class="frame" d="M11 5H9.5A2.5 2.5 0 0 0 7 7.5V12c0 2.5-1 4-3 4 2 0 3 1.5 3 4v4.5A2.5 2.5 0 0 0 9.5 27H11" fill="none" stroke="#1a1a1a" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>
+  <path class="frame" d="M21 5h1.5A2.5 2.5 0 0 1 25 7.5V12c0 2.5 1 4 3 4-2 0-3 1.5-3 4v4.5a2.5 2.5 0 0 1-2.5 2.5H21" fill="none" stroke="#1a1a1a" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>
+  <path class="flow" d="M12 11.5h8m-2.5-2.5 2.5 2.5-2.5 2.5M20 20.5h-8m2.5-2.5-2.5 2.5 2.5 2.5" fill="none" stroke="#2563eb" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
