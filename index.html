@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>JSON parser</title>
+  <title>Utilities</title>
   <style>
     :root {
       color-scheme: light;
@@ -24,6 +24,8 @@
       --num: #8a4b08;
       --mark: #ffe08a;
       --mark-current: #f5a623;
+      --added: #d8f3dc;
+      --removed: #ffd6d6;
     }
     html[data-theme="dark"] {
       color-scheme: dark;
@@ -44,6 +46,8 @@
       --num: #f0c27a;
       --mark: #6b5420;
       --mark-current: #a97820;
+      --added: #1d3b28;
+      --removed: #4a2424;
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; }
@@ -63,6 +67,43 @@
       border-bottom: 1px solid var(--line);
     }
     h1 { margin: 0; font-size: 16px; font-weight: 650; }
+    @media (prefers-reduced-motion: no-preference) {
+      header { position: relative; border-bottom-color: transparent; }
+      header::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 2px;
+        background: linear-gradient(90deg, #c45c6a, #c4a15c, #5a9a78, #5a78b0, #8a6aaa, #c45c6a);
+        background-size: 200% 100%;
+        opacity: 0.7;
+        animation: hairline 28s linear infinite;
+      }
+      .tab, .ghost, #theme, button { transition: background 0.25s ease, color 0.25s ease; }
+      .panel,
+      .panel:not(.active) {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity 0.55s ease-in-out, visibility 0s linear 0.55s;
+      }
+      .panel.active {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transition: opacity 0.55s ease-in-out, visibility 0s linear 0s;
+      }
+    }
+    @keyframes hairline {
+      from { background-position: 0 0; }
+      to { background-position: 200% 0; }
+    }
+    nav { display: flex; gap: 4px; }
     button {
       padding: 6px 14px;
       font: inherit;
@@ -73,21 +114,21 @@
       color: var(--button-text);
       cursor: pointer;
     }
-    #parse:hover { background: var(--button-hover); }
+    button:hover { background: var(--button-hover); }
     #theme {
       margin-left: auto;
       background: transparent;
       color: var(--text);
       border: 1px solid var(--line);
     }
-    #theme:hover { background: var(--line-soft); }
-    .ghost {
+    .tab, .ghost {
       background: transparent;
       color: var(--text);
-      border: 1px solid var(--line);
+      border: 1px solid transparent;
     }
-    .ghost:hover { background: var(--line-soft); }
-    .ghost.active, .ghost.active:hover {
+    .ghost { border-color: var(--line); }
+    #theme:hover, .tab:hover, .ghost:hover { background: var(--line-soft); }
+    .tab.active, .tab.active:hover, .ghost.active, .ghost.active:hover {
       background: var(--button-bg);
       color: var(--button-text);
     }
@@ -98,10 +139,10 @@
       gap: 8px;
       padding: 8px 12px;
       border-bottom: 1px solid var(--line-soft);
+      background: var(--surface);
     }
-    .toolbar input {
-      flex: 1;
-      min-width: 140px;
+    .toolbar input[type="search"],
+    .toolbar select {
       padding: 6px 8px;
       border: 1px solid var(--line);
       border-radius: 6px;
@@ -110,15 +151,22 @@
       font: inherit;
       font-size: 13px;
     }
+    .toolbar input[type="search"] {
+      flex: 1;
+      min-width: 140px;
+    }
     #search-count {
       min-width: 3.5em;
       font-size: 12px;
       color: var(--muted);
     }
-    #output {
+    #output, #diff-result, .preview {
       flex: 1;
       overflow: auto;
       padding: 8px 12px 16px;
+      background: var(--surface);
+    }
+    #output, #diff-result {
       font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     }
     #output:focus { outline: none; }
@@ -134,14 +182,18 @@
     .num { color: var(--num); }
     mark { background: var(--mark); color: inherit; }
     mark.current { background: var(--mark-current); }
-    #status { font-size: 13px; color: var(--status); }
-    #status.error { color: var(--error); }
-    main { flex: 1; display: flex; min-height: 0; }
+    #status, .status { font-size: 13px; color: var(--status); }
+    #status.error, .status.error { color: var(--error); }
+    main { position: relative; flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    .panel { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    .panel:not(.active) { display: none; }
+    .split { flex: 1; display: flex; min-height: 0; }
     section {
       flex: 1;
       display: flex;
       flex-direction: column;
       min-width: 0;
+      min-height: 0;
       background: var(--surface);
     }
     section + section { border-left: 1px solid var(--line); }
@@ -154,13 +206,23 @@
       color: var(--muted);
       border-bottom: 1px solid var(--line-soft);
     }
+    .section-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .section-head label { border-bottom: 0; }
+    input[type="file"] { font: inherit; font-size: 12px; color: var(--muted); }
     textarea {
       flex: 1;
       width: 100%;
+      min-height: 0;
       margin: 0;
       padding: 12px;
       border: 0;
       resize: none;
+      overflow: auto;
       outline: none;
       color: var(--text);
       caret-color: var(--text);
@@ -168,63 +230,154 @@
       background: var(--surface);
     }
     textarea::placeholder { color: var(--placeholder); }
+    .diff-line { min-height: 1.45em; white-space: pre; }
+    .diff-line.added { background: var(--added); }
+    .diff-line.removed { background: var(--removed); }
+    .preview { min-height: 0; padding: 16px 20px; line-height: 1.5; }
+    .preview :first-child { margin-top: 0; }
+    .preview h1 { font-size: 1.6em; line-height: 1.25; }
+    .preview h2 { font-size: 1.35em; line-height: 1.25; padding-bottom: 0.2em; border-bottom: 1px solid var(--line); }
+    .preview h3 { font-size: 1.15em; line-height: 1.25; }
+    .preview blockquote { margin-left: 0; padding-left: 12px; border-left: 3px solid var(--line); color: var(--muted); }
+    .preview ul, .preview ol { padding-left: 1.4em; }
+    .preview hr { border: 0; border-top: 1px solid var(--line); }
+    .preview table { border-collapse: collapse; }
+    .preview th, .preview td { border: 1px solid var(--line); padding: 4px 8px; }
+    .preview img { max-width: 100%; }
+    .preview input[type="checkbox"] { margin-right: 6px; }
+    .preview pre { overflow: auto; padding: 8px; background: var(--bg); border-radius: 6px; }
+    .preview code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .preview a { color: var(--key); }
   </style>
 </head>
 <body>
   <header>
-    <h1>JSON parser</h1>
-    <button id="parse" type="button">Parse</button>
-    <span id="status"></span>
+    <h1>Utilities</h1>
+    <nav>
+      <button class="tab active" type="button" data-tool="json">JSON</button>
+      <button class="tab" type="button" data-tool="sql">SQL</button>
+      <button class="tab" type="button" data-tool="base64">Base64</button>
+      <button class="tab" type="button" data-tool="diff">Diff</button>
+      <button class="tab" type="button" data-tool="markdown">Markdown</button>
+    </nav>
     <button id="theme" type="button">Dark</button>
   </header>
   <main>
-    <section>
-      <label for="input">Unparsed</label>
-      <textarea id="input" spellcheck="false" placeholder="Paste JSON here"></textarea>
-    </section>
-    <section id="parsed">
-      <label>Parsed</label>
+    <div id="json" class="panel active">
       <div class="toolbar">
-        <button id="view-json" class="ghost" type="button">JSON</button>
-        <button id="view-tree" class="ghost" type="button">Tree</button>
-        <input id="search" type="search" placeholder="Search parsed" spellcheck="false">
-        <span id="search-count"></span>
-        <button id="prev" class="ghost" type="button">Prev</button>
-        <button id="next" class="ghost" type="button">Next</button>
-        <button id="collapse" class="ghost" type="button">Collapse</button>
-        <button id="expand" class="ghost" type="button">Expand</button>
+        <button id="parse" type="button">Parse</button>
+        <span id="status"></span>
       </div>
-      <div id="output" tabindex="0"></div>
-    </section>
+      <div class="split">
+        <section>
+          <label for="input">Unparsed</label>
+          <textarea id="input" spellcheck="false" placeholder="Paste JSON here"></textarea>
+        </section>
+        <section id="parsed">
+          <label>Parsed</label>
+          <div class="toolbar">
+            <button id="view-json" class="ghost" type="button">JSON</button>
+            <button id="view-tree" class="ghost" type="button">Tree</button>
+            <input id="search" type="search" placeholder="Search parsed" spellcheck="false">
+            <span id="search-count"></span>
+            <button id="prev" class="ghost" type="button">Prev</button>
+            <button id="next" class="ghost" type="button">Next</button>
+            <button id="collapse" class="ghost" type="button">Collapse</button>
+            <button id="expand" class="ghost" type="button">Expand</button>
+          </div>
+          <div id="output" tabindex="0"></div>
+        </section>
+      </div>
+    </div>
+    <div id="sql" class="panel">
+      <div class="toolbar">
+        <button id="format-sql" type="button">Format</button>
+        <select id="sql-dialect" aria-label="SQL dialect">
+          <option value="sql">Standard</option>
+          <option value="postgresql">PostgreSQL</option>
+          <option value="mysql">MySQL</option>
+          <option value="sqlite">SQLite</option>
+          <option value="bigquery">BigQuery</option>
+          <option value="transactsql">T-SQL</option>
+          <option value="snowflake">Snowflake</option>
+        </select>
+        <span id="sql-status" class="status"></span>
+      </div>
+      <div class="split">
+        <section>
+          <label for="sql-input">SQL</label>
+          <textarea id="sql-input" spellcheck="false" placeholder="Paste SQL here"></textarea>
+        </section>
+        <section>
+          <label for="sql-output">Formatted</label>
+          <textarea id="sql-output" spellcheck="false" readonly placeholder="Formatted SQL appears here"></textarea>
+        </section>
+      </div>
+    </div>
+    <div id="base64" class="panel">
+      <div class="toolbar">
+        <button id="encode" class="ghost active" type="button">Encode</button>
+        <button id="decode" class="ghost" type="button">Decode</button>
+        <span id="base64-status" class="status"></span>
+      </div>
+      <div class="split">
+        <section>
+          <label id="base64-input-label" for="base64-input">Text</label>
+          <textarea id="base64-input" spellcheck="false" placeholder="Paste text"></textarea>
+        </section>
+        <section>
+          <label id="base64-output-label" for="base64-output">Base64</label>
+          <textarea id="base64-output" spellcheck="false" readonly placeholder="Base64 appears here"></textarea>
+        </section>
+      </div>
+    </div>
+    <div id="diff" class="panel">
+      <div class="toolbar">
+        <button id="compare" type="button">Compare</button>
+        <span id="diff-status" class="status"></span>
+      </div>
+      <div class="split">
+        <section>
+          <div class="section-head">
+            <label for="diff-left">Left</label>
+            <input id="diff-left-file" type="file" aria-label="Choose left file">
+          </div>
+          <textarea id="diff-left" spellcheck="false" placeholder="Paste text or choose a file"></textarea>
+        </section>
+        <section>
+          <div class="section-head">
+            <label for="diff-right">Right</label>
+            <input id="diff-right-file" type="file" aria-label="Choose right file">
+          </div>
+          <textarea id="diff-right" spellcheck="false" placeholder="Paste text or choose a file"></textarea>
+        </section>
+      </div>
+      <div id="diff-result"></div>
+    </div>
+    <div id="markdown" class="panel">
+      <div class="split">
+        <section>
+          <label for="markdown-input">Markdown</label>
+          <textarea id="markdown-input" spellcheck="false" placeholder="Write markdown"></textarea>
+        </section>
+        <section>
+          <label>Preview</label>
+          <div id="markdown-preview" class="preview"></div>
+        </section>
+      </div>
+    </div>
   </main>
+  <script src="vendor/sql-formatter.min.js"></script>
+  <script src="vendor/diff.min.js"></script>
+  <script src="vendor/marked.min.js"></script>
+  <script src="vendor/purify.min.js"></script>
+  <script src="js/json.js"></script>
+  <script src="js/sql.js"></script>
+  <script src="js/base64.js"></script>
+  <script src="js/diff.js"></script>
+  <script src="js/markdown.js"></script>
   <script>
-    function deepParse(value) {
-      if (typeof value === "string") {
-        const stripped = value.trim();
-        if (stripped.startsWith("{") || stripped.startsWith("[")) {
-          try {
-            return deepParse(JSON.parse(stripped));
-          } catch {
-            return value;
-          }
-        }
-        return value;
-      }
-      if (Array.isArray(value)) {
-        return value.map(deepParse);
-      }
-      if (value && typeof value === "object") {
-        return Object.fromEntries(
-          Object.entries(value).map(([key, item]) => [key, deepParse(item)])
-        );
-      }
-      return value;
-    }
-
-    function parseJson(text) {
-      return deepParse(JSON.parse(text.trim()));
-    }
-
+    const tools = ["json", "sql", "base64", "diff", "markdown"];
     const themeButton = document.getElementById("theme");
 
     function applyTheme(theme) {
@@ -241,266 +394,28 @@
       applyTheme(next);
     });
 
-    const parsedSection = document.getElementById("parsed");
-    const output = document.getElementById("output");
-    const searchInput = document.getElementById("search");
-    const searchCount = document.getElementById("search-count");
-    const viewButtons = {
-      json: document.getElementById("view-json"),
-      tree: document.getElementById("view-tree")
-    };
-    let matches = [];
-    let matchIndex = -1;
-    let parsedValue;
-    let hasParsed = false;
-    let view = localStorage.getItem("view") === "json" ? "json" : "tree";
-    let openState = new Map();
-
-    function textEl(className, text) {
-      const span = document.createElement("span");
-      span.className = className;
-      span.textContent = text;
-      return span;
-    }
-
-    function valueSpan(value) {
-      if (value === null) return textEl("val nil", "null");
-      if (typeof value === "string") return textEl("val str", value);
-      if (typeof value === "number") return textEl("val num", String(value));
-      return textEl("val", String(value));
-    }
-
-    function childPath(path, key) {
-      const part = String(key);
-      return path === "" ? part : path + "\0" + part;
-    }
-
-    function isOpen(path, depth) {
-      return openState.has(path) ? openState.get(path) : depth < 1;
-    }
-
-    function captureOpenState() {
-      const next = new Map();
-      for (const details of output.querySelectorAll("details")) {
-        next.set(details.dataset.path, details.open);
+    function showTool(name) {
+      const tool = tools.includes(name) ? name : "json";
+      for (const id of tools) {
+        document.getElementById(id).classList.toggle("active", id === tool);
+        document.querySelector(`[data-tool="${id}"]`).classList.toggle("active", id === tool);
       }
-      if (next.size) openState = next;
+      localStorage.setItem("tool", tool);
+      if (location.hash !== "#" + tool) location.hash = tool;
     }
 
-    function nodeView(value, key, depth, path) {
-      const isContainer = value !== null && typeof value === "object";
-      if (!isContainer) {
-        const row = document.createElement("div");
-        row.className = "leaf";
-        if (key !== null) row.append(textEl("key", String(key)), ": ");
-        if (typeof value === "string") row.append('"', valueSpan(value), '"');
-        else row.append(valueSpan(value));
-        return row;
-      }
-
-      const isArray = Array.isArray(value);
-      const entries = isArray ? value.map((item, index) => [index, item]) : Object.entries(value);
-      const details = document.createElement("details");
-      details.dataset.path = path;
-      details.open = isOpen(path, depth);
-      const summary = document.createElement("summary");
-      if (key !== null) summary.append(textEl("key", String(key)), " ");
-      summary.append(isArray ? `[${entries.length}]` : `{${entries.length}}`);
-      const children = document.createElement("div");
-      children.className = "children";
-      for (const [childKey, childValue] of entries) {
-        children.append(nodeView(childValue, childKey, depth + 1, childPath(path, childKey)));
-      }
-      details.append(summary, children);
-      return details;
-    }
-
-    function appendJsonKey(parent, key) {
-      parent.append('"', textEl("key", String(key)), '"', ": ");
-    }
-
-    function jsonLeaf(value, key, last) {
-      const row = document.createElement("div");
-      row.className = "leaf";
-      if (key !== null) appendJsonKey(row, key);
-      if (typeof value === "string") row.append('"', valueSpan(value), '"');
-      else if (value !== null && typeof value === "object") row.append(Array.isArray(value) ? "[]" : "{}");
-      else row.append(valueSpan(value));
-      if (!last) row.append(",");
-      return row;
-    }
-
-    function jsonNode(value, key, depth, last, path) {
-      const isContainer = value !== null && typeof value === "object";
-      if (!isContainer) return jsonLeaf(value, key, last);
-
-      const isArray = Array.isArray(value);
-      const entries = isArray ? value.map((item, index) => [null, item, index]) : Object.entries(value).map(([entryKey, entryValue]) => [entryKey, entryValue, entryKey]);
-      if (!entries.length) return jsonLeaf(value, key, last);
-
-      const details = document.createElement("details");
-      details.dataset.path = path;
-      details.open = isOpen(path, depth);
-      const summary = document.createElement("summary");
-      if (key !== null) appendJsonKey(summary, key);
-      summary.append(textEl("when-open", isArray ? "[" : "{"), textEl("when-closed", isArray ? "[…]" : "{…}"));
-      if (!last) summary.append(textEl("when-closed", ","));
-
-      const children = document.createElement("div");
-      children.className = "children";
-      entries.forEach(([childKey, childValue, pathKey], index) => {
-        children.append(jsonNode(childValue, childKey, depth + 1, index === entries.length - 1, childPath(path, pathKey)));
-      });
-      const end = document.createElement("div");
-      end.className = "end";
-      end.textContent = (isArray ? "]" : "}") + (last ? "" : ",");
-      children.append(end);
-      details.append(summary, children);
-      return details;
-    }
-
-    function renderCurrent(keepOpen) {
-      if (keepOpen) captureOpenState();
-      else openState = new Map();
-      output.dataset.view = view;
-      if (!hasParsed) return;
-      const root = view === "json" ? jsonNode(parsedValue, null, 0, true, "") : nodeView(parsedValue, null, 0, "");
-      output.replaceChildren(root);
-      runSearch(keepOpen ? false : undefined);
-    }
-
-    function applyView(next) {
-      view = next;
-      localStorage.setItem("view", view);
-      viewButtons.json.classList.toggle("active", view === "json");
-      viewButtons.tree.classList.toggle("active", view === "tree");
-      renderCurrent(true);
-    }
-
-    function clearMarks() {
-      for (const node of output.querySelectorAll(".key, .val")) {
-        if (node.querySelector("mark")) node.textContent = node.textContent;
-      }
-      matches = [];
-      matchIndex = -1;
-    }
-
-    function openAncestors(node) {
-      let parent = node.parentElement;
-      while (parent && parent !== output) {
-        if (parent.tagName === "DETAILS") parent.open = true;
-        parent = parent.parentElement;
-      }
-    }
-
-    function showMatch(reveal) {
-      for (const mark of matches) mark.classList.remove("current");
-      if (!matches.length) {
-        searchCount.textContent = searchInput.value.trim() ? "0" : "";
-        return;
-      }
-      const mark = matches[matchIndex];
-      if (reveal !== false) {
-        openAncestors(mark);
-        mark.scrollIntoView({ block: "center" });
-      }
-      mark.classList.add("current");
-      searchCount.textContent = `${matchIndex + 1}/${matches.length}`;
-    }
-
-    function highlight(node, query) {
-      const text = node.textContent;
-      const lower = text.toLowerCase();
-      const needle = query.toLowerCase();
-      const fragment = document.createDocumentFragment();
-      let start = 0;
-      let found = false;
-      let index = lower.indexOf(needle);
-      while (index !== -1) {
-        found = true;
-        if (index > start) fragment.append(text.slice(start, index));
-        const mark = document.createElement("mark");
-        mark.textContent = text.slice(index, index + needle.length);
-        fragment.append(mark);
-        start = index + needle.length;
-        index = lower.indexOf(needle, start);
-      }
-      if (!found) return;
-      if (start < text.length) fragment.append(text.slice(start));
-      node.replaceChildren(fragment);
-    }
-
-    function runSearch(reveal) {
-      clearMarks();
-      const query = searchInput.value.trim();
-      if (!query) {
-        searchCount.textContent = "";
-        return;
-      }
-      for (const node of output.querySelectorAll(".key, .val")) highlight(node, query);
-      matches = [...output.querySelectorAll("mark")];
-      matchIndex = matches.length ? 0 : -1;
-      showMatch(reveal);
-    }
-
-    function stepMatch(direction) {
-      if (!matches.length) return;
-      matchIndex = (matchIndex + direction + matches.length) % matches.length;
-      showMatch();
-    }
-
-    function setOpen(open) {
-      for (const details of output.querySelectorAll("details")) details.open = open;
-    }
-
-    searchInput.addEventListener("input", runSearch);
-    searchInput.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter") return;
-      event.preventDefault();
-      stepMatch(event.shiftKey ? -1 : 1);
-    });
-    document.getElementById("prev").addEventListener("click", () => stepMatch(-1));
-    document.getElementById("next").addEventListener("click", () => stepMatch(1));
-    document.getElementById("collapse").addEventListener("click", () => setOpen(false));
-    document.getElementById("expand").addEventListener("click", () => setOpen(true));
-    viewButtons.json.addEventListener("click", () => applyView("json"));
-    viewButtons.tree.addEventListener("click", () => applyView("tree"));
-    applyView(view);
-
-    let parsedActive = false;
-    document.addEventListener("pointerdown", (event) => {
-      parsedActive = parsedSection.contains(event.target);
-    });
-    document.addEventListener("focusin", (event) => {
-      parsedActive = parsedSection.contains(event.target);
+    document.querySelector("nav").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-tool]");
+      if (!button) return;
+      showTool(button.dataset.tool);
     });
 
-    document.addEventListener("keydown", (event) => {
-      if (event.key.toLowerCase() !== "f" || event.altKey || event.shiftKey) return;
-      if (!event.metaKey && !event.ctrlKey) return;
-      if (!parsedActive && !parsedSection.contains(event.target)) return;
-      event.preventDefault();
-      searchInput.focus();
-      searchInput.select();
-    }, true);
-
-    document.getElementById("parse").addEventListener("click", () => {
-      const status = document.getElementById("status");
-      try {
-        parsedValue = parseJson(document.getElementById("input").value);
-        hasParsed = true;
-        status.textContent = "Parsed";
-        status.className = "";
-        renderCurrent(false);
-      } catch (error) {
-        hasParsed = false;
-        output.replaceChildren();
-        clearMarks();
-        searchCount.textContent = "";
-        status.textContent = error.message;
-        status.className = "error";
-      }
+    window.addEventListener("hashchange", () => {
+      showTool(location.hash.slice(1));
     });
+
+    const fromHash = location.hash.slice(1);
+    showTool(tools.includes(fromHash) ? fromHash : localStorage.getItem("tool"));
   </script>
 </body>
 </html>
