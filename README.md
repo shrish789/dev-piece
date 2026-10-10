@@ -1,6 +1,6 @@
 # dev-piece
 
-Small browser tools: JSON, a SQL formatter, base64, a line diff, and Markdown and HTML previews.
+Small browser tools: JSON, a SQL formatter, base64, JWT inspection, a line diff, and Markdown and HTML previews.
 
 Open `index.html` in a browser, or use [https://shrish789.github.io/dev-piece/](https://shrish789.github.io/dev-piece/). There is no compile step. GitHub Pages hosts the files. The tools run in the browser.
 
@@ -27,6 +27,12 @@ Paste SQL and click **Format**. Keywords are uppercased and the statement is bro
 ## Base64
 
 **Encode** turns text into base64. **Decode** turns base64 into text. The selected direction stays highlighted, and the two panes are labeled for that direction. Switching direction puts the current result on the left and converts it again. The conversion uses UTF-8, so non-ASCII text round-trips. Invalid base64 shows the error and leaves the output unchanged. The direction is remembered.
+
+## JWT
+
+Paste a three-part compact JWT, with or without the common `Bearer ` prefix, to inspect its header, payload, signature segment, and readable `exp`, `nbf`, and `iat` timestamps. Decoding happens as you type and Cmd+Enter on macOS or Ctrl+Enter elsewhere runs it immediately. Tokens and secrets stay in the page and are never saved.
+
+Decoding shows the token's contents but does not establish that they came from a trusted issuer. For tokens using HS256, HS384, or HS512, enter the shared HMAC secret and click **Verify** to check the signature. The verifier treats the entered value as a UTF-8 secret. Five-part encrypted JWE tokens are identified but cannot be decrypted by this tool.
 
 ## Diff
 
@@ -58,6 +64,6 @@ After a push to `master`, the site updates from that branch at `/` (root). Turn 
 
 ## Feature checks and references
 
-Run `node tests/features-check.js` and `node base64-check.js`. The feature checks use a lightweight DOM harness to exercise diff output and draft persistence; they do not replace visual browser testing.
+Run `node tests/features-check.js`, `node tests/jwt-check.js`, and `node base64-check.js`. The feature checks use a lightweight DOM harness to exercise the browser tools and draft persistence; they do not replace visual browser testing.
 
-Implementation references: [jsdiff line and character APIs](https://github.com/kpdecker/jsdiff), [Diffchecker's side-by-side text comparison](https://www.diffchecker.com/text-compare/), and [MDN Web Storage](https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API/Using_the_Web_Storage_API).
+Implementation references: [JWT](https://www.rfc-editor.org/rfc/rfc7519), [JWS compact serialization](https://www.rfc-editor.org/rfc/rfc7515), [jsdiff line and character APIs](https://github.com/kpdecker/jsdiff), [Diffchecker's side-by-side text comparison](https://www.diffchecker.com/text-compare/), and [MDN Web Storage](https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API/Using_the_Web_Storage_API).

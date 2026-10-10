@@ -46,6 +46,7 @@ function harness(file, storage = new Map()) {
   const frames = [];
   const context = {
     document, window, Diff,
+    TextEncoder, TextDecoder, Uint8Array, atob, btoa, crypto: globalThis.crypto,
     localStorage: { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) },
     marked: { parse: text => text }, DOMPurify: { sanitize: text => text },
     hljs: { highlighted: [], highlightElement(element) { this.highlighted.push(element); } },
@@ -64,6 +65,21 @@ const jsonRoot = json.get('output').children[0];
 const jsonLeaf = jsonRoot.children[1].children[0];
 assert.equal(jsonLeaf.children[0].textContent, '"a\\"b"');
 assert.equal(jsonLeaf.children[2].textContent, '"line\\nnext"');
+
+const jwt = harness('js/jwt.js');
+const jwtExample = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.invalid';
+jwt.get('jwt-input').value = `Bearer ${jwtExample}`;
+jwt.get('jwt-input').fire('input');
+assert(jwt.get('jwt-header').textContent.includes('"alg": "HS256"'));
+assert(jwt.get('jwt-payload').textContent.includes('"name": "John Doe"'));
+assert.equal(jwt.get('jwt-secret').disabled, false);
+assert(jwt.get('jwt-status').className.includes('warning'));
+assert.equal(jwt.get('jwt-signature').textContent, 'invalid');
+jwt.get('jwt-input').value = 'one.two.three.four.five';
+jwt.get('jwt-input').fire('input');
+assert(jwt.get('jwt-status').textContent.includes('encrypted JWE'));
+jwt.get('jwt-clear').fire('click');
+assert.equal(jwt.get('decode-jwt').disabled, true);
 
 const diff = harness('js/diff.js');
 assert.equal(diff.get('compare').disabled, true);

@@ -36,6 +36,8 @@
       --focus: #2563eb;
       --success-bg: #edf8f0;
       --error-bg: #fff0f1;
+      --warning: #7a4b00;
+      --warning-bg: #fff4cc;
     }
     html[data-theme="dark"] {
       color-scheme: dark;
@@ -67,6 +69,8 @@
       --focus: #8ab4f8;
       --success-bg: #183222;
       --error-bg: #3d2023;
+      --warning: #ffd166;
+      --warning-bg: #3a3015;
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; }
@@ -261,6 +265,7 @@
       background: var(--success-bg);
     }
     #status.error, .status.error { color: var(--error); background: var(--error-bg); }
+    #status.warning, .status.warning { color: var(--warning); background: var(--warning-bg); }
     main { position: relative; flex: 1; display: flex; flex-direction: column; min-height: 0; }
     .panel { flex: 1; display: flex; flex-direction: column; min-height: 0; }
     .panel:not(.active) { display: none; }
@@ -468,6 +473,84 @@
       border: 0;
       background: #fff;
     }
+    .jwt-source { min-height: 180px; }
+    .jwt-privacy {
+      margin: 0;
+      padding: 8px 12px;
+      color: var(--muted);
+      border-top: 1px solid var(--line-soft);
+      font-size: 12px;
+    }
+    .jwt-verifier {
+      display: grid;
+      grid-template-columns: minmax(140px, 1fr) auto;
+      gap: 8px;
+      padding: 10px 12px;
+      border-top: 1px solid var(--line);
+    }
+    .jwt-verifier label {
+      grid-column: 1 / -1;
+      padding: 0;
+      border: 0;
+    }
+    .jwt-verifier input {
+      min-width: 0;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--text);
+      background: var(--surface);
+      font: 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .jwt-verification { grid-column: 1 / -1; }
+    .jwt-results {
+      flex: 1;
+      overflow: auto;
+      padding: 12px;
+      background: var(--bg);
+    }
+    .jwt-card {
+      margin-bottom: 12px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+    }
+    .jwt-card:last-child { margin-bottom: 0; }
+    .jwt-card h2 {
+      margin: 0;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--line-soft);
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .jwt-card.header h2 { color: #c2415b; }
+    .jwt-card.payload h2 { color: #7357b3; }
+    .jwt-card.signature h2 { color: #087b8c; }
+    .jwt-card pre, .jwt-signature-value {
+      display: block;
+      min-height: 3.5em;
+      margin: 0;
+      padding: 12px;
+      overflow: auto;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      color: var(--text);
+      font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .jwt-claims:empty { display: none; }
+    .jwt-claims { padding: 0 12px 12px; }
+    .jwt-claim {
+      display: grid;
+      grid-template-columns: 3em minmax(0, 1fr);
+      gap: 8px;
+      padding: 7px 0;
+      border-top: 1px solid var(--line-soft);
+      font-size: 12px;
+    }
+    .jwt-claim strong { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .jwt-claim span { color: var(--muted); }
     @media (max-width: 760px) {
       header { flex-wrap: wrap; padding: 8px 10px; }
       nav { order: 3; width: 100%; padding-bottom: 2px; }
@@ -496,6 +579,7 @@
       <button class="tab active" type="button" data-tool="json" aria-pressed="true">JSON</button>
       <button class="tab" type="button" data-tool="sql" aria-pressed="false">SQL</button>
       <button class="tab" type="button" data-tool="base64" aria-pressed="false">Base64</button>
+      <button class="tab" type="button" data-tool="jwt" aria-pressed="false">JWT</button>
       <button class="tab" type="button" data-tool="diff" aria-pressed="false">Diff</button>
       <button class="tab" type="button" data-tool="markdown" aria-pressed="false">Markdown</button>
       <button class="tab" type="button" data-tool="html" aria-pressed="false">HTML</button>
@@ -568,6 +652,44 @@
         <section>
           <label id="base64-output-label" for="base64-output">Base64</label>
           <textarea id="base64-output" spellcheck="false" readonly placeholder="Base64 appears here"></textarea>
+        </section>
+      </div>
+    </div>
+    <div id="jwt" class="panel">
+      <div class="toolbar">
+        <button id="decode-jwt" type="button" title="Decode JWT (Ctrl or Command + Enter)">Decode <span class="shortcut">⌘/Ctrl ↵</span></button>
+        <button id="jwt-clear" class="ghost" type="button">Clear</button>
+        <span id="jwt-status" class="status" role="status" aria-live="polite"></span>
+      </div>
+      <div class="split">
+        <section>
+          <label for="jwt-input">Encoded JWT</label>
+          <textarea id="jwt-input" class="jwt-source" spellcheck="false" autocomplete="off" placeholder="Paste a compact JWT or Bearer token"></textarea>
+          <p class="jwt-privacy">Decoded locally. Tokens and secrets are never saved.</p>
+          <div class="jwt-verifier">
+            <label for="jwt-secret">HMAC secret · HS256 / HS384 / HS512</label>
+            <input id="jwt-secret" type="password" autocomplete="off" placeholder="Optional verification secret" disabled>
+            <button id="verify-jwt" class="ghost" type="button" disabled>Verify</button>
+            <span id="jwt-verification" class="status jwt-verification" role="status" aria-live="polite"></span>
+          </div>
+        </section>
+        <section>
+          <label>Decoded token</label>
+          <div class="jwt-results">
+            <article class="jwt-card header">
+              <h2>Header</h2>
+              <pre id="jwt-header">Paste a token to inspect its header.</pre>
+            </article>
+            <article class="jwt-card payload">
+              <h2>Payload</h2>
+              <pre id="jwt-payload">Claims will appear here.</pre>
+              <div id="jwt-claims" class="jwt-claims"></div>
+            </article>
+            <article class="jwt-card signature">
+              <h2>Signature</h2>
+              <code id="jwt-signature" class="jwt-signature-value">Not decoded or verified.</code>
+            </article>
+          </div>
         </section>
       </div>
     </div>
@@ -646,11 +768,12 @@
   <script src="js/json.js"></script>
   <script src="js/sql.js"></script>
   <script src="js/base64.js"></script>
+  <script src="js/jwt.js"></script>
   <script src="js/diff.js"></script>
   <script src="js/markdown.js"></script>
   <script src="js/html.js"></script>
   <script>
-    const tools = ["json", "sql", "base64", "diff", "markdown", "html"];
+    const tools = ["json", "sql", "base64", "jwt", "diff", "markdown", "html"];
     const themeButton = document.getElementById("theme");
 
     function applyTheme(theme) {
@@ -694,6 +817,7 @@
       const action = {
         json: document.getElementById("parse"),
         sql: document.getElementById("format-sql"),
+        jwt: document.getElementById("decode-jwt"),
         diff: document.getElementById("compare"),
         html: document.getElementById("render-html")
       }[activeTool];
