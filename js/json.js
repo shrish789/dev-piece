@@ -1,3 +1,11 @@
+const JSON_INDENT = 2;
+const JSON_FIRST_OPEN_DEPTH = 1;
+const JSON_EXPAND_STORAGE_KEY = "json-expand";
+const JSON_EXPAND_FIRST_LEVEL = "level";
+const JSON_EXPAND_ALL = "expanded";
+const JSON_EXPAND_NONE = "collapsed";
+const JSON_EXPAND_MODES = [JSON_EXPAND_FIRST_LEVEL, JSON_EXPAND_ALL, JSON_EXPAND_NONE];
+
 function deepParse(value) {
   if (typeof value === "string") {
     const stripped = value.trim();
@@ -38,6 +46,10 @@ let matchIndex = -1;
 let parsedValue;
 let hasParsed = false;
 let view = localStorage.getItem("view") === "json" ? "json" : "tree";
+const expandSelect = document.getElementById("json-expand");
+const savedExpand = localStorage.getItem(JSON_EXPAND_STORAGE_KEY);
+let expandMode = JSON_EXPAND_MODES.includes(savedExpand) ? savedExpand : JSON_EXPAND_FIRST_LEVEL;
+expandSelect.value = expandMode;
 let openState = new Map();
 
 function textEl(className, text) {
@@ -59,8 +71,14 @@ function childPath(path, key) {
   return path === "" ? part : path + "\0" + part;
 }
 
+function defaultOpen(depth) {
+  if (expandMode === JSON_EXPAND_ALL) return true;
+  if (expandMode === JSON_EXPAND_NONE) return false;
+  return depth < JSON_FIRST_OPEN_DEPTH;
+}
+
 function isOpen(path, depth) {
-  return openState.has(path) ? openState.get(path) : depth < 1;
+  return openState.has(path) ? openState.get(path) : defaultOpen(depth);
 }
 
 function captureOpenState() {
@@ -243,8 +261,27 @@ searchInput.addEventListener("keydown", (event) => {
 });
 document.getElementById("prev").addEventListener("click", () => stepMatch(-1));
 document.getElementById("next").addEventListener("click", () => stepMatch(1));
+document.getElementById("copy-json").addEventListener("click", () => {
+  const status = document.getElementById("status");
+  if (!hasParsed) {
+    status.textContent = "Nothing to copy";
+    status.className = "warning";
+    return;
+  }
+  copyToClipboard(document.getElementById("copy-json"), JSON.stringify(parsedValue, null, JSON_INDENT), status);
+});
 document.getElementById("collapse").addEventListener("click", () => setOpen(false));
 document.getElementById("expand").addEventListener("click", () => setOpen(true));
+expandSelect.addEventListener("change", () => {
+  if (!JSON_EXPAND_MODES.includes(expandSelect.value)) return;
+  expandMode = expandSelect.value;
+  try {
+    localStorage.setItem(JSON_EXPAND_STORAGE_KEY, expandMode);
+  } catch {
+    // The choice still applies until the page is reloaded.
+  }
+  renderCurrent(false);
+});
 viewButtons.json.addEventListener("click", () => applyView("json"));
 viewButtons.tree.addEventListener("click", () => applyView("tree"));
 applyView(view);

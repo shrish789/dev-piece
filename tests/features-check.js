@@ -44,8 +44,15 @@ function harness(file, storage = new Map()) {
     createDocumentFragment: () => Object.assign(new Element(), { fragment: true })
   });
   const frames = [];
+  const clipboard = {
+    text: "",
+    writeText(value) {
+      this.text = value;
+      return Promise.resolve();
+    }
+  };
   const context = {
-    document, window, Diff,
+    document, window, Diff, navigator: { clipboard },
     TextEncoder, TextDecoder, Uint8Array, atob, btoa, crypto: globalThis.crypto,
     localStorage: { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) },
     marked: { parse: text => text }, DOMPurify: { sanitize: text => text },
@@ -54,8 +61,9 @@ function harness(file, storage = new Map()) {
     requestAnimationFrame: fn => frames.push(fn), setTimeout: () => 1, clearTimeout() {}
   };
   vm.createContext(context);
+  vm.runInContext(fs.readFileSync('js/copy.js', 'utf8'), context);
   vm.runInContext(fs.readFileSync(file, 'utf8'), context);
-  return { get, context, window, frames, storage };
+  return { get, context, window, frames, storage, clipboard };
 }
 
 const json = harness('js/json.js', new Map([['view', 'json']]));
@@ -65,6 +73,34 @@ const jsonRoot = json.get('output').children[0];
 const jsonLeaf = jsonRoot.children[1].children[0];
 assert.equal(jsonLeaf.children[0].textContent, '"a\\"b"');
 assert.equal(jsonLeaf.children[2].textContent, '"line\\nnext"');
+assert.equal(jsonRoot.open, true);
+
+function openFlags(storage) {
+  const session = harness('js/json.js', storage);
+  session.get('input').value = '{"outer":{"inner":1}}';
+  session.get('parse').fire('click');
+  const root = session.get('output').children[0];
+  return [session, root.open, root.children[1].children[0].open];
+}
+const [firstLevel, rootOpen, childOpen] = openFlags(new Map([['view', 'json']]));
+assert.deepEqual([rootOpen, childOpen], [true, false]);
+assert.equal(firstLevel.get('json-expand').value, 'level');
+firstLevel.get('json-expand').value = 'expanded';
+firstLevel.get('json-expand').fire('change');
+const expandedRoot = firstLevel.get('output').children[0];
+assert.equal(expandedRoot.open, true);
+assert.equal(expandedRoot.children[1].children[0].open, true);
+assert.equal(firstLevel.storage.get('json-expand'), 'expanded');
+const [, collapsedRoot, collapsedChild] = openFlags(new Map([['view', 'json'], ['json-expand', 'collapsed']]));
+assert.deepEqual([collapsedRoot, collapsedChild], [false, false]);
+const [, ignoredRoot, ignoredChild] = openFlags(new Map([['view', 'json'], ['json-expand', 'nope']]));
+assert.deepEqual([ignoredRoot, ignoredChild], [true, false]);
+const treeExpanded = harness('js/json.js', new Map([['json-expand', 'expanded']]));
+treeExpanded.get('input').value = '{"outer":{"inner":1}}';
+treeExpanded.get('parse').fire('click');
+const treeRoot = treeExpanded.get('output').children[0];
+assert.equal(treeRoot.open, true);
+assert.equal(treeRoot.children[1].children[0].open, true);
 
 const jwt = harness('js/jwt.js');
 const jwtExample = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.invalid';
@@ -117,6 +153,10 @@ rows = compare('hello cat\n', 'hello cut\n', 'lines');
 assert(rows[0].children[0].className.includes('removed'));
 assert(rows[0].children[1].className.includes('added'));
 assert(rows[0].children[0].children[1].children.some(span => span.className.includes('diff-inline removed') && span.textContent === 'a'));
+diff.get('diff-copy').fire('click');
+assert.match(diff.clipboard.text, /--- original/);
+assert.match(diff.clipboard.text, /-hello cat/);
+assert.match(diff.clipboard.text, /\+hello cut/);
 diff.get('diff-left').fire('input');
 assert(diff.get('diff-result').children.length > 0, 'comparison should update live after the first compare');
 diff.get('diff-swap').fire('click');
@@ -170,6 +210,11 @@ scrolling.get('markdown-input').fire('input');
 assert.equal(scrolling.context.hljs.highlighted.at(-1), code);
 assert.equal(codePanel.dataset.language, 'javascript');
 assert.equal(codePanel.attributes['aria-label'], 'javascript code block');
+scrolling.get('markdown-input').value = '<p>kept</p>';
+scrolling.get('markdown-input').fire('input');
+scrolling.get('copy-markdown').fire('click');
+assert.equal(scrolling.clipboard.text, '<p>kept</p>');
+assert.equal(scrolling.get('copy-markdown').disabled, false);
 
 const htmlStorage = new Map([['html-draft-v1', JSON.stringify({ text: '<h1>Saved</h1>', live: true })]]);
 const html = harness('js/html.js', htmlStorage);
@@ -189,5 +234,31 @@ assert.equal(html.get('html-input').value, '');
 assert.equal(html.get('render-html').disabled, true);
 assert.equal(html.get('html-clear').disabled, true);
 assert.equal(JSON.parse(htmlStorage.get('html-draft-v1')).text, '');
+
+const copiedJwt = harness('js/jwt.js');
+copiedJwt.get('jwt-input').value = jwtExample;
+copiedJwt.get('jwt-input').fire('input');
+copiedJwt.get('copy-jwt-header').fire('click');
+assert.match(copiedJwt.clipboard.text, /"alg": "HS256"/);
+copiedJwt.get('copy-jwt-payload').fire('click');
+assert.match(copiedJwt.clipboard.text, /"name": "John Doe"/);
+copiedJwt.get('copy-jwt-signature').fire('click');
+assert.equal(copiedJwt.clipboard.text, 'invalid');
+assert.equal(copiedJwt.get('copy-jwt-header').disabled, false);
+copiedJwt.get('jwt-clear').fire('click');
+assert.equal(copiedJwt.get('copy-jwt-payload').disabled, true);
+
+const sql = harness('js/sql.js');
+sql.get('sql-output').value = 'SELECT 1';
+sql.get('copy-sql').disabled = false;
+sql.get('copy-sql').fire('click');
+assert.equal(sql.clipboard.text, 'SELECT 1');
+
+const base64 = harness('js/base64.js');
+base64.get('base64-input').value = 'hi';
+base64.get('base64-input').fire('input');
+base64.get('copy-base64').fire('click');
+assert.equal(base64.clipboard.text, 'aGk=');
+assert.equal(base64.get('copy-base64').disabled, false);
 
 console.log('Feature checks passed: JSON rendering, HTML preview isolation, side-by-side and exact diff views, live updates, Unicode, line endings, draft restore, scroll sync, syntax highlighting, clear, and storage failures.');

@@ -21,6 +21,7 @@ if (typeof document !== "undefined") {
   const outputLabel = document.getElementById("base64-output-label");
   const encodeButton = document.getElementById("encode");
   const decodeButton = document.getElementById("decode");
+  const copyButton = document.getElementById("copy-base64");
   const modeCopy = {
     encode: {
       source: "Text",
@@ -42,10 +43,15 @@ if (typeof document !== "undefined") {
     status.className = isError ? "status error" : "status";
   }
 
+  function updateCopy() {
+    copyButton.disabled = output.value === "";
+  }
+
   function convert() {
     if (input.value === "") {
       output.value = "";
       setStatus("", false);
+      updateCopy();
       return;
     }
     try {
@@ -54,6 +60,7 @@ if (typeof document !== "undefined") {
     } catch (error) {
       setStatus(error.message, true);
     }
+    updateCopy();
   }
 
   function applyMode(next, carryResult) {
@@ -73,6 +80,7 @@ if (typeof document !== "undefined") {
     convert();
   }
 
+  copyButton.addEventListener("click", () => copyToClipboard(copyButton, output.value, status));
   encodeButton.addEventListener("click", () => applyMode("encode", true));
   decodeButton.addEventListener("click", () => applyMode("decode", true));
   input.addEventListener("input", convert);

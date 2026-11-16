@@ -15,6 +15,7 @@ const diffMode = document.getElementById("diff-mode");
 const compareButton = document.getElementById("compare");
 const swapButton = document.getElementById("diff-swap");
 const clearButton = document.getElementById("diff-clear");
+const copyDiffButton = document.getElementById("diff-copy");
 let hasCompared = false;
 
 function updateCompareAvailability() {
@@ -22,6 +23,7 @@ function updateCompareAvailability() {
   compareButton.disabled = isEmpty;
   swapButton.disabled = isEmpty;
   clearButton.disabled = isEmpty;
+  copyDiffButton.disabled = isEmpty;
 }
 
 function readChosenFile(fileInput, textarea) {
@@ -224,6 +226,13 @@ function compareTexts() {
 }
 
 compareButton.addEventListener("click", compareTexts);
+copyDiffButton.addEventListener("click", () => {
+  copyToClipboard(
+    copyDiffButton,
+    Diff.createTwoFilesPatch("original", "changed", leftInput.value, rightInput.value),
+    diffStatus
+  );
+});
 diffMode.addEventListener("change", () => {
   if (hasCompared) compareTexts();
 });

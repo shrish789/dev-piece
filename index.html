@@ -295,6 +295,7 @@
       border-bottom: 1px solid var(--line-soft);
     }
     .section-head label { border-bottom: 0; }
+    .section-head .ghost { margin-left: auto; margin-right: 8px; }
     input[type="file"] { max-width: 100%; font: inherit; font-size: 12px; color: var(--muted); }
     input[type="file"]::file-selector-button {
       min-height: 30px;
@@ -518,6 +519,10 @@
     }
     .jwt-card:last-child { margin-bottom: 0; }
     .jwt-card h2 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
       margin: 0;
       padding: 8px 12px;
       border-bottom: 1px solid var(--line-soft);
@@ -525,6 +530,7 @@
       letter-spacing: 0.04em;
       text-transform: uppercase;
     }
+    .jwt-card h2 .ghost { letter-spacing: 0; text-transform: none; }
     .jwt-card.header h2 { color: #c2415b; }
     .jwt-card.payload h2 { color: #7357b3; }
     .jwt-card.signature h2 { color: #087b8c; }
@@ -608,6 +614,12 @@
             <button id="next" class="ghost" type="button">Next</button>
             <button id="collapse" class="ghost" type="button">Collapse</button>
             <button id="expand" class="ghost" type="button">Expand</button>
+            <select id="json-expand" aria-label="Nodes open by default" title="How far to open nodes after parsing">
+              <option value="level">First level</option>
+              <option value="expanded">Expanded</option>
+              <option value="collapsed">Collapsed</option>
+            </select>
+            <button id="copy-json" class="ghost" type="button" title="Copy formatted JSON">Copy</button>
           </div>
           <div id="output" tabindex="0"></div>
         </section>
@@ -633,7 +645,10 @@
           <textarea id="sql-input" spellcheck="false" placeholder="Paste SQL here"></textarea>
         </section>
         <section>
-          <label for="sql-output">Formatted</label>
+          <div class="section-head">
+            <label for="sql-output">Formatted</label>
+            <button id="copy-sql" class="ghost" type="button" title="Copy formatted SQL" disabled>Copy</button>
+          </div>
           <textarea id="sql-output" spellcheck="false" readonly placeholder="Formatted SQL appears here"></textarea>
         </section>
       </div>
@@ -650,7 +665,10 @@
           <textarea id="base64-input" spellcheck="false" placeholder="Paste text"></textarea>
         </section>
         <section>
-          <label id="base64-output-label" for="base64-output">Base64</label>
+          <div class="section-head">
+            <label id="base64-output-label" for="base64-output">Base64</label>
+            <button id="copy-base64" class="ghost" type="button" title="Copy result" disabled>Copy</button>
+          </div>
           <textarea id="base64-output" spellcheck="false" readonly placeholder="Base64 appears here"></textarea>
         </section>
       </div>
@@ -677,16 +695,16 @@
           <label>Decoded token</label>
           <div class="jwt-results">
             <article class="jwt-card header">
-              <h2>Header</h2>
+              <h2>Header <button id="copy-jwt-header" class="ghost" type="button" title="Copy header JSON" disabled>Copy</button></h2>
               <pre id="jwt-header">Paste a token to inspect its header.</pre>
             </article>
             <article class="jwt-card payload">
-              <h2>Payload</h2>
+              <h2>Payload <button id="copy-jwt-payload" class="ghost" type="button" title="Copy payload JSON" disabled>Copy</button></h2>
               <pre id="jwt-payload">Claims will appear here.</pre>
               <div id="jwt-claims" class="jwt-claims"></div>
             </article>
             <article class="jwt-card signature">
-              <h2>Signature</h2>
+              <h2>Signature <button id="copy-jwt-signature" class="ghost" type="button" title="Copy signature" disabled>Copy</button></h2>
               <code id="jwt-signature" class="jwt-signature-value">Not decoded or verified.</code>
             </article>
           </div>
@@ -701,6 +719,7 @@
           <option value="characters">Character details</option>
         </select>
         <button id="diff-swap" class="ghost" type="button">Swap</button>
+        <button id="diff-copy" class="ghost" type="button" title="Copy a unified diff" disabled>Copy diff</button>
         <button id="diff-clear" class="ghost" type="button">Clear</button>
         <span id="diff-status" class="status" role="status" aria-live="polite"></span>
       </div>
@@ -733,7 +752,10 @@
           <textarea id="markdown-input" spellcheck="false" placeholder="Write markdown"></textarea>
         </section>
         <section>
-          <label>Preview</label>
+          <div class="section-head">
+            <label>Preview</label>
+            <button id="copy-markdown" class="ghost" type="button" title="Copy rendered HTML" disabled>Copy HTML</button>
+          </div>
           <div id="markdown-preview" class="preview"></div>
         </section>
       </div>
@@ -765,6 +787,7 @@
   <script src="vendor/marked.min.js"></script>
   <script src="vendor/purify.min.js"></script>
   <script src="vendor/highlight.min.js"></script>
+  <script src="js/copy.js"></script>
   <script src="js/json.js"></script>
   <script src="js/sql.js"></script>
   <script src="js/base64.js"></script>

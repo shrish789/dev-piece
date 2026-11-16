@@ -3,6 +3,7 @@ const markdownPreview = document.getElementById("markdown-preview");
 let scrollSource = null;
 let scrollSyncToken = 0;
 const markdownStatus = document.getElementById("markdown-status");
+const copyMarkdownButton = document.getElementById("copy-markdown");
 const draftKey = "markdown-draft-v1";
 let saveTimer;
 let restoredScroll = null;
@@ -71,6 +72,9 @@ markdownInput.addEventListener("input", () => {
 });
 markdownInput.addEventListener("select", scheduleDraftSave);
 markdownInput.addEventListener("scroll", scheduleScrollSave);
+copyMarkdownButton.addEventListener("click", () => {
+  copyToClipboard(copyMarkdownButton, DOMPurify.sanitize(marked.parse(markdownInput.value)), markdownStatus);
+});
 document.getElementById("markdown-clear").addEventListener("click", () => {
   if (markdownInput.value && !window.confirm("Clear the Markdown draft saved in this browser?")) return;
   clearTimeout(saveTimer);
@@ -96,6 +100,7 @@ function applyScrollRatio(element, ratio) {
 function renderMarkdown() {
   const raw = marked.parse(markdownInput.value);
   markdownPreview.innerHTML = DOMPurify.sanitize(raw);
+  copyMarkdownButton.disabled = markdownInput.value.trim() === "";
   for (const code of markdownPreview.querySelectorAll("pre code")) {
     const declaredLanguage = code.className.match(/(?:^|\s)language-([^\s]+)/)?.[1];
     if (declaredLanguage && code.parentElement) {

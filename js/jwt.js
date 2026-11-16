@@ -96,6 +96,10 @@ if (typeof document !== "undefined") {
   const decodeJwtButton = document.getElementById("decode-jwt");
   const verifyJwtButton = document.getElementById("verify-jwt");
   const clearJwtButton = document.getElementById("jwt-clear");
+  const copyJwtHeaderButton = document.getElementById("copy-jwt-header");
+  const copyJwtPayloadButton = document.getElementById("copy-jwt-payload");
+  const copyJwtSignatureButton = document.getElementById("copy-jwt-signature");
+  const JWT_JSON_INDENT = 2;
   let currentJwt;
 
   function setJwtStatus(message, type = "") {
@@ -114,6 +118,13 @@ if (typeof document !== "undefined") {
     clearJwtButton.disabled = empty;
   }
 
+  function updateJwtCopyButtons() {
+    const decoded = currentJwt !== undefined;
+    copyJwtHeaderButton.disabled = !decoded;
+    copyJwtPayloadButton.disabled = !decoded;
+    copyJwtSignatureButton.disabled = !decoded || currentJwt.parts[2] === "";
+  }
+
   function clearJwtOutput() {
     currentJwt = undefined;
     jwtHeader.textContent = "Paste a token to inspect its header.";
@@ -122,6 +133,7 @@ if (typeof document !== "undefined") {
     jwtClaims.replaceChildren();
     jwtSecret.disabled = true;
     verifyJwtButton.disabled = true;
+    updateJwtCopyButtons();
     setJwtVerification("");
   }
 
@@ -160,9 +172,10 @@ if (typeof document !== "undefined") {
     }
     try {
       currentJwt = decodeJwt(jwtInput.value);
-      jwtHeader.textContent = JSON.stringify(currentJwt.header, null, 2);
-      jwtPayload.textContent = JSON.stringify(currentJwt.payload, null, 2);
+      jwtHeader.textContent = JSON.stringify(currentJwt.header, null, JWT_JSON_INDENT);
+      jwtPayload.textContent = JSON.stringify(currentJwt.payload, null, JWT_JSON_INDENT);
       jwtSignature.textContent = currentJwt.parts[2] || "Empty signature segment";
+      updateJwtCopyButtons();
       renderJwtClaims(currentJwt.payload);
       const hmac = ["HS256", "HS384", "HS512"].includes(currentJwt.header.alg);
       jwtSecret.disabled = !hmac;
@@ -179,6 +192,18 @@ if (typeof document !== "undefined") {
   jwtSecret.addEventListener("input", () => {
     verifyJwtButton.disabled = jwtSecret.value === "" || jwtSecret.disabled;
     setJwtVerification(jwtSecret.value ? "Secret entered; choose Verify" : "Enter the signing secret to verify this HMAC signature");
+  });
+  copyJwtHeaderButton.addEventListener("click", () => {
+    if (!currentJwt) return;
+    copyToClipboard(copyJwtHeaderButton, JSON.stringify(currentJwt.header, null, JWT_JSON_INDENT), jwtStatus);
+  });
+  copyJwtPayloadButton.addEventListener("click", () => {
+    if (!currentJwt) return;
+    copyToClipboard(copyJwtPayloadButton, JSON.stringify(currentJwt.payload, null, JWT_JSON_INDENT), jwtStatus);
+  });
+  copyJwtSignatureButton.addEventListener("click", () => {
+    if (!currentJwt || currentJwt.parts[2] === "") return;
+    copyToClipboard(copyJwtSignatureButton, currentJwt.parts[2], jwtStatus);
   });
   decodeJwtButton.addEventListener("click", renderDecodedJwt);
   verifyJwtButton.addEventListener("click", async () => {
