@@ -2,6 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <script>
+    (function () {
+      try {
+        var savedTheme = localStorage.getItem("theme");
+        document.documentElement.dataset.theme = savedTheme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      } catch (error) {}
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Utilities</title>
   <link rel="icon" href="logo.svg" type="image/svg+xml">
@@ -38,6 +46,7 @@
       --error-bg: #fff0f1;
       --warning: #7a4b00;
       --warning-bg: #fff4cc;
+      --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%231a1a1a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     }
     html[data-theme="dark"] {
       color-scheme: dark;
@@ -71,6 +80,7 @@
       --error-bg: #3d2023;
       --warning: #ffd166;
       --warning-bg: #3a3015;
+      --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23ececec' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; }
@@ -181,8 +191,9 @@
     }
     .toolbar input[type="search"],
     .toolbar select {
+      height: 36px;
       min-height: 36px;
-      padding: 7px 9px;
+      padding: 0 12px;
       border: 1px solid var(--line);
       border-radius: 6px;
       background: var(--surface);
@@ -190,6 +201,17 @@
       font: inherit;
       font-size: 13px;
     }
+    .toolbar select {
+      appearance: none;
+      padding-right: 32px;
+      line-height: 34px;
+      background-color: var(--surface);
+      background-image: var(--select-chevron);
+      background-repeat: no-repeat;
+      background-position: right 11px center;
+      cursor: pointer;
+    }
+    .toolbar select:hover { background-color: var(--line-soft); }
     .toolbar input[type="search"] {
       flex: 1;
       min-width: 140px;
@@ -591,6 +613,16 @@
       <button class="tab" type="button" data-tool="html" aria-pressed="false">HTML</button>
     </nav>
     <button id="theme" type="button">Dark</button>
+    <script>
+      (function () {
+        var dark = document.documentElement.dataset.theme === "dark";
+        var button = document.getElementById("theme");
+        var label = "Switch to " + (dark ? "light" : "dark") + " theme";
+        button.textContent = dark ? "Light" : "Dark";
+        button.setAttribute("aria-label", label);
+        button.title = label;
+      })();
+    </script>
   </header>
   <main>
     <div id="json" class="panel active">
@@ -608,17 +640,17 @@
           <div class="toolbar">
             <button id="view-json" class="ghost" type="button">JSON</button>
             <button id="view-tree" class="ghost" type="button">Tree</button>
+            <select id="json-expand" aria-label="Nodes open by default" title="How far to open nodes after parsing">
+              <option value="level">First level</option>
+              <option value="expanded">Expanded</option>
+              <option value="collapsed">Collapsed</option>
+            </select>
             <input id="search" type="search" placeholder="Search parsed" spellcheck="false">
             <span id="search-count"></span>
             <button id="prev" class="ghost" type="button">Prev</button>
             <button id="next" class="ghost" type="button">Next</button>
             <button id="collapse" class="ghost" type="button">Collapse</button>
             <button id="expand" class="ghost" type="button">Expand</button>
-            <select id="json-expand" aria-label="Nodes open by default" title="How far to open nodes after parsing">
-              <option value="level">First level</option>
-              <option value="expanded">Expanded</option>
-              <option value="collapsed">Collapsed</option>
-            </select>
             <button id="copy-json" class="ghost" type="button" title="Copy formatted JSON">Copy</button>
           </div>
           <div id="output" tabindex="0"></div>
