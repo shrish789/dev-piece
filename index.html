@@ -229,11 +229,42 @@
       text-transform: none;
       cursor: pointer;
     }
-    #search-count {
-      min-width: 3.5em;
-      font-size: 12px;
-      color: var(--muted);
+    .parsed-view { position: relative; flex: 1; min-height: 0; display: flex; }
+    #findbar {
+      position: absolute;
+      z-index: 1;
+      top: 8px;
+      right: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--bg);
+      box-shadow: 0 8px 24px rgb(0 0 0 / 0.28);
     }
+    #findbar[hidden] { display: none; }
+    #findbar input {
+      width: 180px;
+      height: 32px;
+      padding: 0 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text);
+      font: inherit;
+      font-size: 13px;
+    }
+    #findbar button {
+      width: 32px;
+      min-height: 32px;
+      padding: 0;
+      font-size: 16px;
+      line-height: 1;
+    }
+    #search-count { font-size: 12px; color: var(--muted); white-space: nowrap; }
+    #search-count:empty { display: none; }
     #output, #diff-result, .preview {
       flex: 1;
       overflow: auto;
@@ -317,7 +348,7 @@
       border-bottom: 1px solid var(--line-soft);
     }
     .section-head label { border-bottom: 0; }
-    .section-head .ghost { margin-left: auto; margin-right: 8px; }
+    .section-head button { margin-left: auto; margin-right: 8px; }
     input[type="file"] { max-width: 100%; font: inherit; font-size: 12px; color: var(--muted); }
     input[type="file"]::file-selector-button {
       min-height: 30px;
@@ -552,7 +583,7 @@
       letter-spacing: 0.04em;
       text-transform: uppercase;
     }
-    .jwt-card h2 .ghost { letter-spacing: 0; text-transform: none; }
+    .jwt-card h2 button { letter-spacing: 0; text-transform: none; }
     .jwt-card.header h2 { color: #c2415b; }
     .jwt-card.payload h2 { color: #7357b3; }
     .jwt-card.signature h2 { color: #087b8c; }
@@ -645,15 +676,17 @@
               <option value="expanded">Expanded</option>
               <option value="collapsed">Collapsed</option>
             </select>
-            <input id="search" type="search" placeholder="Search parsed" spellcheck="false">
-            <span id="search-count"></span>
-            <button id="prev" class="ghost" type="button">Prev</button>
-            <button id="next" class="ghost" type="button">Next</button>
-            <button id="collapse" class="ghost" type="button">Collapse</button>
-            <button id="expand" class="ghost" type="button">Expand</button>
-            <button id="copy-json" class="ghost" type="button" title="Copy formatted JSON">Copy</button>
+            <button id="copy-json" type="button" title="Copy formatted JSON">Copy</button>
           </div>
-          <div id="output" tabindex="0"></div>
+          <div class="parsed-view">
+            <div id="findbar" hidden>
+              <input id="search" type="search" placeholder="Find" spellcheck="false" aria-label="Find in parsed JSON">
+              <span id="search-count"></span>
+              <button id="prev" type="button" aria-label="Previous match" title="Previous match">↑</button>
+              <button id="next" type="button" aria-label="Next match" title="Next match">↓</button>
+            </div>
+            <div id="output" tabindex="0"></div>
+          </div>
         </section>
       </div>
     </div>
@@ -679,7 +712,7 @@
         <section>
           <div class="section-head">
             <label for="sql-output">Formatted</label>
-            <button id="copy-sql" class="ghost" type="button" title="Copy formatted SQL" disabled>Copy</button>
+            <button id="copy-sql" type="button" title="Copy formatted SQL" disabled>Copy</button>
           </div>
           <textarea id="sql-output" spellcheck="false" readonly placeholder="Formatted SQL appears here"></textarea>
         </section>
@@ -699,7 +732,7 @@
         <section>
           <div class="section-head">
             <label id="base64-output-label" for="base64-output">Base64</label>
-            <button id="copy-base64" class="ghost" type="button" title="Copy result" disabled>Copy</button>
+            <button id="copy-base64" type="button" title="Copy result" disabled>Copy</button>
           </div>
           <textarea id="base64-output" spellcheck="false" readonly placeholder="Base64 appears here"></textarea>
         </section>
@@ -727,16 +760,16 @@
           <label>Decoded token</label>
           <div class="jwt-results">
             <article class="jwt-card header">
-              <h2>Header <button id="copy-jwt-header" class="ghost" type="button" title="Copy header JSON" disabled>Copy</button></h2>
+              <h2>Header <button id="copy-jwt-header" type="button" title="Copy header JSON" disabled>Copy</button></h2>
               <pre id="jwt-header">Paste a token to inspect its header.</pre>
             </article>
             <article class="jwt-card payload">
-              <h2>Payload <button id="copy-jwt-payload" class="ghost" type="button" title="Copy payload JSON" disabled>Copy</button></h2>
+              <h2>Payload <button id="copy-jwt-payload" type="button" title="Copy payload JSON" disabled>Copy</button></h2>
               <pre id="jwt-payload">Claims will appear here.</pre>
               <div id="jwt-claims" class="jwt-claims"></div>
             </article>
             <article class="jwt-card signature">
-              <h2>Signature <button id="copy-jwt-signature" class="ghost" type="button" title="Copy signature" disabled>Copy</button></h2>
+              <h2>Signature <button id="copy-jwt-signature" type="button" title="Copy signature" disabled>Copy</button></h2>
               <code id="jwt-signature" class="jwt-signature-value">Not decoded or verified.</code>
             </article>
           </div>
@@ -751,7 +784,7 @@
           <option value="characters">Character details</option>
         </select>
         <button id="diff-swap" class="ghost" type="button">Swap</button>
-        <button id="diff-copy" class="ghost" type="button" title="Copy a unified diff" disabled>Copy diff</button>
+        <button id="diff-copy" type="button" title="Copy a unified diff" disabled>Copy diff</button>
         <button id="diff-clear" class="ghost" type="button">Clear</button>
         <span id="diff-status" class="status" role="status" aria-live="polite"></span>
       </div>
@@ -786,7 +819,7 @@
         <section>
           <div class="section-head">
             <label>Preview</label>
-            <button id="copy-markdown" class="ghost" type="button" title="Copy rendered HTML" disabled>Copy HTML</button>
+            <button id="copy-markdown" type="button" title="Copy rendered HTML" disabled>Copy HTML</button>
           </div>
           <div id="markdown-preview" class="preview"></div>
         </section>

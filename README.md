@@ -17,8 +17,8 @@ Invalid JSON leaves the parsed pane empty and shows the parser error in the tool
 Strings that themselves contain JSON objects or arrays are parsed again, so nested JSON stored as text shows up as structure.
 
 - **JSON** and **Tree** switch the layout. The choice is remembered.
-- **Search parsed** highlights keys and values. **Prev** and **Next** move between matches. Enter goes to the next match; Shift+Enter goes to the previous one. With the parsed pane focused, Cmd+F (Ctrl+F) focuses the search box.
-- **Collapse** and **Expand** close or open every node. The first level starts open.
+- With the parsed pane focused, Cmd+F (Ctrl+F) opens find inside the result. The arrows beside the field move between matches, Enter goes to the next match, and Shift+Enter goes to the previous one. Escape closes find.
+- **First level**, **Expanded**, and **Collapsed** choose how far nodes start open. The choice is remembered.
 
 ## SQL
 

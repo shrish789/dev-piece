@@ -35,6 +35,7 @@ function parseJson(text) {
 
 const parsedSection = document.getElementById("parsed");
 const output = document.getElementById("output");
+const findbar = document.getElementById("findbar");
 const searchInput = document.getElementById("search");
 const searchCount = document.getElementById("search-count");
 const viewButtons = {
@@ -249,12 +250,26 @@ function stepMatch(direction) {
   showMatch();
 }
 
-function setOpen(open) {
-  for (const details of output.querySelectorAll("details")) details.open = open;
+function showFindbar() {
+  findbar.hidden = false;
+  searchInput.focus();
+  searchInput.select();
+}
+
+function hideFindbar() {
+  findbar.hidden = true;
+  searchInput.value = "";
+  runSearch();
+  output.focus();
 }
 
 searchInput.addEventListener("input", runSearch);
 searchInput.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    event.preventDefault();
+    hideFindbar();
+    return;
+  }
   if (event.key !== "Enter") return;
   event.preventDefault();
   stepMatch(event.shiftKey ? -1 : 1);
@@ -270,8 +285,6 @@ document.getElementById("copy-json").addEventListener("click", () => {
   }
   copyToClipboard(document.getElementById("copy-json"), JSON.stringify(parsedValue, null, JSON_INDENT), status);
 });
-document.getElementById("collapse").addEventListener("click", () => setOpen(false));
-document.getElementById("expand").addEventListener("click", () => setOpen(true));
 expandSelect.addEventListener("change", () => {
   if (!JSON_EXPAND_MODES.includes(expandSelect.value)) return;
   expandMode = expandSelect.value;
@@ -299,8 +312,7 @@ document.addEventListener("keydown", (event) => {
   if (!event.metaKey && !event.ctrlKey) return;
   if (!parsedActive && !parsedSection.contains(event.target)) return;
   event.preventDefault();
-  searchInput.focus();
-  searchInput.select();
+  showFindbar();
 }, true);
 
 document.getElementById("parse").addEventListener("click", () => {
