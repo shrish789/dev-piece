@@ -1,6 +1,6 @@
 # dev-piece
 
-Small browser tools: JSON, a SQL formatter, base64, JWT inspection, a line diff, and Markdown and HTML previews.
+Small browser tools: JSON, a SQL formatter, base64, JWT inspection, a line diff, Markdown and HTML previews, and a crontab explainer.
 
 Open `index.html` in a browser, or use [https://shrish789.github.io/dev-piece/](https://shrish789.github.io/dev-piece/). There is no compile step. GitHub Pages hosts the files. The tools run in the browser.
 
@@ -52,6 +52,12 @@ Write or paste HTML and CSS into **HTML source**. **Live preview** updates the r
 
 The preview uses an isolated iframe and a restrictive content policy. Scripts, network requests from JavaScript, embedded frames, plugins, form submissions, and access to the utilities page are blocked. Inline CSS works, and external HTTP(S) styles, images, fonts, and media can load. Cmd+Enter on macOS or Ctrl+Enter elsewhere renders immediately.
 
+## Cron
+
+Open it at `#cron`. Paste a five-field crontab expression, or edit minute, hour, day, month, and weekday. The page explains the schedule in words and lists the next times it will run on this computer. Example buttons fill the usual schedules. The last expression is remembered in this browser.
+
+Standard crontab rules apply. Sunday is `0` or `7`. Month and weekday names (`JAN`, `MON`, `MON-FRI`) work, as do `@hourly`, `@daily`, `@weekly`, `@monthly`, `@yearly`, and `@reboot`. If both the day of the month and the day of the week are restricted, the job runs when either field matches. A seconds field, and Quartz `L`, `W`, and `#`, are rejected.
+
 ## Theme
 
 **Dark** / **Light** in the header switches the theme. The choice is remembered, and a first visit follows the system preference.
@@ -66,4 +72,4 @@ After a push to `master`, the site updates from that branch at `/` (root). Turn 
 
 Run `node tests/features-check.js`, `node tests/jwt-check.js`, and `node base64-check.js`. The feature checks use a lightweight DOM harness to exercise the browser tools and draft persistence; they do not replace visual browser testing.
 
-Implementation references: [JWT](https://www.rfc-editor.org/rfc/rfc7519), [JWS compact serialization](https://www.rfc-editor.org/rfc/rfc7515), [jsdiff line and character APIs](https://github.com/kpdecker/jsdiff), [Diffchecker's side-by-side text comparison](https://www.diffchecker.com/text-compare/), and [MDN Web Storage](https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API/Using_the_Web_Storage_API).
+Implementation references: [JWT](https://www.rfc-editor.org/rfc/rfc7519), [JWS compact serialization](https://www.rfc-editor.org/rfc/rfc7515), [jsdiff line and character APIs](https://github.com/kpdecker/jsdiff), [Diffchecker's side-by-side text comparison](https://www.diffchecker.com/text-compare/), [crontab.guru](https://crontab.guru/), [crontab(5)](https://man7.org/linux/man-pages/man5/crontab.5.html), and [MDN Web Storage](https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API/Using_the_Web_Storage_API).

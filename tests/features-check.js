@@ -261,4 +261,108 @@ base64.get('copy-base64').fire('click');
 assert.equal(base64.clipboard.text, 'aGk=');
 assert.equal(base64.get('copy-base64').disabled, false);
 
-console.log('Feature checks passed: JSON rendering, HTML preview isolation, side-by-side and exact diff views, live updates, Unicode, line endings, draft restore, scroll sync, syntax highlighting, clear, and storage failures.');
+const cron = harness('js/cron.js');
+assert.equal(cron.get('cron-input').value, '* * * * *');
+assert.equal(cron.get('cron-summary').textContent, 'Every minute');
+assert.equal(cron.get('cron-minute').value, '*');
+assert.equal(cron.get('cron-hint-minute').textContent, 'any minute');
+assert.equal(cron.get('copy-cron').disabled, false);
+assert(cron.get('cron-preset-minute').className.includes('active'));
+assert.equal(cron.get('cron-next').children.length, 8);
+assert.match(cron.get('cron-next-title').textContent, /^Next runs · UTC[+-]\d{2}:\d{2}$/);
+
+const cronMonths = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+function readCronRun(text) {
+  const match = text.match(/^(Sun|Mon|Tue|Wed|Thu|Fri|Sat) (\d{2}) ([A-Za-z]{3}) (\d{4}), (\d{2}):(\d{2})$/);
+  assert(match, text);
+  return {
+    weekday: match[1],
+    day: Number(match[2]),
+    date: new Date(Number(match[4]), cronMonths[match[3]], Number(match[2]), Number(match[5]), Number(match[6]))
+  };
+}
+const everyMinute = cron.get('cron-next').children.map(item => readCronRun(item.textContent));
+assert(everyMinute[0].date.getTime() > Date.now() - 1000);
+assert(everyMinute[0].date.getTime() - Date.now() < 120000);
+assert.equal(everyMinute[1].date.getTime() - everyMinute[0].date.getTime(), 60000);
+
+function explainCron(expression) {
+  cron.get('cron-input').value = expression;
+  cron.get('cron-input').fire('input');
+  return cron.get('cron-summary').textContent;
+}
+assert.equal(explainCron('*/15 * * * *'), 'Every 15 minutes');
+assert.equal(explainCron('0 * * * *'), 'Every hour');
+assert.equal(explainCron('0 */2 * * *'), 'Every 2 hours');
+assert.equal(explainCron('30 4 * * *'), 'At 04:30, every day');
+assert.equal(explainCron('0 9 * * 1-5'), 'At 09:00, only on Monday through Friday');
+assert.equal(explainCron('0 0 1 * *'), 'At 00:00, on day 1 of the month');
+assert.equal(explainCron('0 0 * * 0'), 'At 00:00, only on Sunday');
+assert.equal(explainCron('0 0 1 * 1'), 'At 00:00, on day 1 of the month, and on Monday');
+assert.equal(explainCron('0 0 1 1 *'), 'At 00:00, on day 1 of the month, only in January');
+assert.equal(explainCron('0 9-17 * * *'), 'Every hour from 09:00 through 17:00');
+assert.equal(explainCron('15,45 * * * *'), 'At minutes 15 and 45 of every hour');
+assert.equal(explainCron('0 0 * JAN MON'), 'At 00:00, only in January, only on Monday');
+assert.equal(explainCron('0 0 1 JUL *'), 'At 00:00, on day 1 of the month, only in July');
+assert.equal(cron.get('cron-hint-month').textContent, 'July');
+assert.equal(explainCron('@hourly'), 'Every hour');
+assert.equal(cron.get('cron-status').textContent, '@hourly is 0 * * * *');
+assert.equal(cron.get('cron-minute').value, '0');
+assert(cron.get('cron-preset-hourly').className.includes('active'));
+assert.equal(explainCron('@reboot'), 'Runs when cron restarts');
+assert.equal(cron.get('cron-next-empty').textContent, 'No timetable');
+assert.equal(explainCron('0 0 * * 7'), 'At 00:00, only on Sunday');
+for (const item of cron.get('cron-next').children) assert.equal(readCronRun(item.textContent).weekday, 'Sun');
+
+explainCron('0 0 1 * 1');
+const eitherDay = cron.get('cron-next').children.map(item => readCronRun(item.textContent));
+assert(eitherDay.every(run => run.weekday === 'Mon' || run.day === 1));
+assert(eitherDay.some(run => run.weekday === 'Mon' && run.day !== 1));
+assert(eitherDay.some(run => run.day === 1));
+for (const run of eitherDay) assert.equal(run.date.getHours(), 0);
+assert.equal(cron.get('cron-weekday').value, '1');
+
+explainCron('0 9 * * 1-5');
+for (const item of cron.get('cron-next').children) {
+  const run = readCronRun(item.textContent);
+  assert(['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(run.weekday));
+  assert.equal(run.date.getHours(), 9);
+  assert.equal(run.date.getMinutes(), 0);
+}
+
+explainCron('0 0 31 2 *');
+assert.equal(cron.get('cron-next').children.length, 0);
+assert.match(cron.get('cron-next-empty').textContent, /No runs in the next 8 years/);
+
+explainCron('60 * * * *');
+assert.equal(cron.get('cron-summary').textContent, "Can't read that expression");
+assert.match(cron.get('cron-status').textContent, /Minute: must be from 0 to 59/);
+assert.equal(cron.get('copy-cron').disabled, true);
+assert.equal(cron.get('cron-next').children.length, 0);
+explainCron('* * * * * *');
+assert.match(cron.get('cron-status').textContent, /Use 5 fields/);
+explainCron('0 0 1 * L');
+assert.match(cron.get('cron-status').textContent, /outside standard crontab/);
+
+cron.get('cron-minute').value = '*/5';
+cron.get('cron-hour').value = '*';
+cron.get('cron-day').value = '*';
+cron.get('cron-month').value = '*';
+cron.get('cron-weekday').value = 'MON-FRI';
+cron.get('cron-minute').fire('input');
+assert.equal(cron.get('cron-input').value, '*/5 * * * MON-FRI');
+assert.equal(cron.get('cron-summary').textContent, 'Every 5 minutes, only on Monday through Friday');
+assert.equal(cron.get('cron-hint-weekday').textContent, 'Monday through Friday');
+
+cron.get('cron-preset-weekly').fire('click');
+assert.equal(cron.get('cron-input').value, '0 0 * * 0');
+assert.equal(cron.get('cron-summary').textContent, 'At 00:00, only on Sunday');
+assert(cron.get('cron-preset-weekly').className.includes('active'));
+assert.equal(cron.storage.get('cron-expression'), '0 0 * * 0');
+cron.get('copy-cron').fire('click');
+assert.equal(cron.clipboard.text, '0 0 * * 0');
+const restoredCron = harness('js/cron.js', cron.storage);
+assert.equal(restoredCron.get('cron-input').value, '0 0 * * 0');
+assert.equal(restoredCron.get('cron-summary').textContent, 'At 00:00, only on Sunday');
+
+console.log('Feature checks passed: JSON rendering, HTML preview isolation, side-by-side and exact diff views, live updates, Unicode, line endings, draft restore, scroll sync, syntax highlighting, clear, storage failures, and cron explanations.');

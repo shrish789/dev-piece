@@ -610,6 +610,121 @@
     }
     .jwt-claim strong { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
     .jwt-claim span { color: var(--muted); }
+    .cron-expression {
+      flex: 1;
+      min-width: 180px;
+      height: 36px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text);
+      font: 14px/36px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .cron-editor {
+      padding: 12px 12px 4px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+    }
+    .cron-fields {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+    }
+    label.cron-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+      padding: 8px 10px 10px;
+      border: 1px solid var(--line);
+      border-top: 3px solid var(--cron-accent);
+      border-radius: 6px;
+      background: var(--bg);
+      color: var(--text);
+      font-weight: 400;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+    .cron-field.minute { --cron-accent: #c45c6a; }
+    .cron-field.hour { --cron-accent: #c4a15c; }
+    .cron-field.day { --cron-accent: #5a9a78; }
+    .cron-field.month { --cron-accent: #5a78b0; }
+    .cron-field.weekday { --cron-accent: #8a6aaa; }
+    .cron-field-name {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 650;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .cron-field-name small {
+      font-weight: 550;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+    .cron-field input {
+      width: 100%;
+      min-width: 0;
+      height: 34px;
+      padding: 0 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text);
+      font: 15px/34px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .cron-hint {
+      min-height: 1.3em;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.3;
+    }
+    .cron-summary {
+      margin: 12px 2px 10px;
+      font-size: 20px;
+      font-weight: 650;
+      letter-spacing: -0.01em;
+      line-height: 1.3;
+    }
+    .cron-results {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 4px 16px 16px;
+    }
+    .cron-next { margin: 0; padding-left: 1.4em; }
+    .cron-next li {
+      padding: 6px 0;
+      border-bottom: 1px solid var(--line-soft);
+      font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .cron-next-empty { margin: 8px 0 0; color: var(--muted); font-size: 13px; }
+    .cron-next-empty:empty { display: none; }
+    .cron-help { margin: 8px 0 0; }
+    .cron-help div {
+      display: grid;
+      grid-template-columns: 88px minmax(0, 1fr);
+      gap: 8px;
+      padding: 8px 0;
+      border-top: 1px solid var(--line-soft);
+    }
+    .cron-help div:first-child { border-top: 0; }
+    .cron-help dt {
+      font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .cron-help dd { margin: 0; color: var(--muted); font-size: 13px; }
+    .cron-note {
+      margin: 14px 0 0;
+      padding-top: 12px;
+      border-top: 1px solid var(--line-soft);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
     @media (max-width: 760px) {
       header { flex-wrap: wrap; padding: 8px 10px; }
       nav { order: 3; width: 100%; padding-bottom: 2px; }
@@ -621,6 +736,12 @@
       .section-head { flex-wrap: wrap; gap: 4px; padding-bottom: 6px; }
       .section-head input[type="file"] { margin-left: 8px; }
       .preview { padding: 14px; }
+      #cron { overflow: auto; }
+      #cron .split { flex: none; overflow: visible; }
+      #cron section { flex: none; min-height: 240px; }
+      .cron-editor { padding: 10px 8px 2px; }
+      .cron-fields { grid-template-columns: 1fr 1fr; }
+      .cron-summary { font-size: 18px; }
     }
   </style>
 </head>
@@ -642,6 +763,7 @@
       <button class="tab" type="button" data-tool="diff" aria-pressed="false">Diff</button>
       <button class="tab" type="button" data-tool="markdown" aria-pressed="false">Markdown</button>
       <button class="tab" type="button" data-tool="html" aria-pressed="false">HTML</button>
+      <button class="tab" type="button" data-tool="cron" aria-pressed="false">Cron</button>
     </nav>
     <button id="theme" type="button">Dark</button>
     <script>
@@ -846,6 +968,76 @@
         </section>
       </div>
     </div>
+    <div id="cron" class="panel">
+      <div class="toolbar">
+        <input id="cron-input" class="cron-expression" type="text" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Cron expression" placeholder="* * * * *">
+        <button id="copy-cron" type="button" title="Copy cron expression" disabled>Copy</button>
+        <span id="cron-status" class="status" role="status" aria-live="polite"></span>
+      </div>
+      <div class="toolbar" role="group" aria-label="Examples">
+        <button id="cron-preset-minute" class="ghost" type="button">Every minute</button>
+        <button id="cron-preset-15" class="ghost" type="button">Every 15 min</button>
+        <button id="cron-preset-hourly" class="ghost" type="button">Hourly</button>
+        <button id="cron-preset-daily" class="ghost" type="button">Daily</button>
+        <button id="cron-preset-weekdays" class="ghost" type="button">Weekdays at 09:00</button>
+        <button id="cron-preset-weekly" class="ghost" type="button">Weekly</button>
+        <button id="cron-preset-monthly" class="ghost" type="button">Monthly</button>
+        <button id="cron-preset-yearly" class="ghost" type="button">Yearly</button>
+      </div>
+      <div class="cron-editor">
+        <div class="cron-fields">
+          <label class="cron-field minute">
+            <span class="cron-field-name">Minute <small>0–59</small></span>
+            <input id="cron-minute" type="text" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Minute">
+            <span id="cron-hint-minute" class="cron-hint"></span>
+          </label>
+          <label class="cron-field hour">
+            <span class="cron-field-name">Hour <small>0–23</small></span>
+            <input id="cron-hour" type="text" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Hour">
+            <span id="cron-hint-hour" class="cron-hint"></span>
+          </label>
+          <label class="cron-field day">
+            <span class="cron-field-name">Day <small>1–31</small></span>
+            <input id="cron-day" type="text" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Day of month">
+            <span id="cron-hint-day" class="cron-hint"></span>
+          </label>
+          <label class="cron-field month">
+            <span class="cron-field-name">Month <small>1–12</small></span>
+            <input id="cron-month" type="text" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Month">
+            <span id="cron-hint-month" class="cron-hint"></span>
+          </label>
+          <label class="cron-field weekday">
+            <span class="cron-field-name">Weekday <small>0–7</small></span>
+            <input id="cron-weekday" type="text" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Day of week">
+            <span id="cron-hint-weekday" class="cron-hint"></span>
+          </label>
+        </div>
+        <p id="cron-summary"></p>
+      </div>
+      <div class="split">
+        <section>
+          <label id="cron-next-title">Next runs</label>
+          <div class="cron-results">
+            <p id="cron-next-empty" class="cron-next-empty"></p>
+            <ol id="cron-next"></ol>
+          </div>
+        </section>
+        <section>
+          <label>How to read it</label>
+          <div class="cron-results">
+            <dl class="cron-help">
+              <div><dt>*</dt><dd>any value</dd></div>
+              <div><dt>,</dt><dd>list of values</dd></div>
+              <div><dt>-</dt><dd>inclusive range</dd></div>
+              <div><dt>/</dt><dd>step through a range</dd></div>
+              <div><dt>Names</dt><dd>JAN–DEC and SUN–SAT</dd></div>
+              <div><dt>Shortcuts</dt><dd>@hourly @daily @weekly @monthly @yearly @reboot</dd></div>
+            </dl>
+            <p class="cron-note">Times use this computer's local zone. Sunday is 0 or 7. When both the day of the month and the day of the week are specific, the job runs if either one matches.</p>
+          </div>
+        </section>
+      </div>
+    </div>
   </main>
   <script src="vendor/sql-formatter.min.js"></script>
   <script src="vendor/diff.min.js"></script>
@@ -860,8 +1052,9 @@
   <script src="js/diff.js"></script>
   <script src="js/markdown.js"></script>
   <script src="js/html.js"></script>
+  <script src="js/cron.js"></script>
   <script>
-    const tools = ["json", "sql", "base64", "jwt", "diff", "markdown", "html"];
+    const tools = ["json", "sql", "base64", "jwt", "diff", "markdown", "html", "cron"];
     const themeButton = document.getElementById("theme");
 
     function applyTheme(theme) {
@@ -888,6 +1081,7 @@
         const tab = document.querySelector(`[data-tool="${id}"]`);
         tab.classList.toggle("active", id === tool);
         tab.setAttribute("aria-pressed", String(id === tool));
+        if (id === tool) tab.scrollIntoView({ block: "nearest", inline: "nearest" });
       }
       localStorage.setItem("tool", tool);
       if (location.hash !== "#" + tool) location.hash = tool;
